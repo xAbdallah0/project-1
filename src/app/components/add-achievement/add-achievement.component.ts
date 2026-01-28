@@ -35,6 +35,11 @@ export class AddAchievementComponent implements OnInit {
   deletedAttachments: string[] = [];
   isMobileView = false;
 
+  // متغيرات PDF Testing
+  pdfGenerating = false;
+  pdfLoading = false;
+  pdfFilename: string | null = null;
+
   constructor(
     private fb: FormBuilder,
     private criteriaService: CriteriaService,
@@ -224,14 +229,14 @@ export class AddAchievementComponent implements OnInit {
           /[\r\n\t\u00A0\u1680\u180E\u2000-\u200B\u202F\u205F\u3000\uFEFF]+/g,
           ' '
         )
-        .replace(/\s+/g, ' ') 
-        .replace(/^\s+/, '') 
-        .replace(/\s+$/, '') 
-        .normalize('NFKC') 
+        .replace(/\s+/g, ' ')
+        .replace(/^\s+/, '')
+        .replace(/\s+$/, '')
+        .normalize('NFKC')
         .replace(
           /[^\u0600-\u06FF\u0750-\u077F\u08A0-\u08FF\uFB50-\uFDFF\uFE70-\uFEFF\u0020-\u007E\u00A0-\u00FF\u0100-\u017F\u0180-\u024F\u1E00-\u1EFF]/g,
           ''
-        ) 
+        )
         .trim()
     );
   }
@@ -241,7 +246,7 @@ export class AddAchievementComponent implements OnInit {
     const div = document.createElement('div');
     div.innerHTML = html;
     const text = div.textContent || div.innerText || '';
-    return this.cleanText(text); 
+    return this.cleanText(text);
   }
 
   getDescriptionLength(): number {
@@ -299,6 +304,134 @@ export class AddAchievementComponent implements OnInit {
         }
       }
     );
+  }
+
+  // ==================== وظائف PDF Testing ====================
+
+  // توليد PDF تجريبي - الحل الجديد
+  generateTestingPdf(): void {
+    if (this.form.invalid) {
+      this.markAllFieldsAsTouched();
+      this.showWarning(
+        'يرجى إكمال جميع الحقول المطلوبة',
+        'يجب ملء جميع البيانات الإلزامية قبل إنشاء PDF'
+      );
+      return;
+    }
+
+    this.pdfGenerating = true;
+
+    const activityData = this.prepareActivityDataForPDF();
+
+    // استخدم الدالة الموجودة بالفعل - generateAllActivitiesPDF
+    this.activityService.generateAllActivitiesPDF(activityData).subscribe({
+      next: (res: any) => {
+        this.pdfGenerating = false;
+
+        // معالجة الرد
+        if (res.success && res.file) {
+          const filename = this.extractFilenameFromUrl(res.file);
+          this.savePdfFilename(filename);
+
+          this.showSuccess('تم إنشاء PDF بنجاح');
+        } else {
+          this.showError(res.message || 'حدث خطأ في إنشاء PDF');
+        }
+      },
+      error: (err) => {
+        console.error('Error generating testing PDF:', err);
+        this.pdfGenerating = false;
+        this.showError(err?.error?.message || 'لم نتمكن من إنشاء PDF');
+      }
+    });
+  }
+
+  // استخراج اسم الملف من URL
+  private extractFilenameFromUrl(url: string): string {
+    if (!url) return 'achievement.pdf';
+    try {
+      const urlParts = url.split('/');
+      return urlParts[urlParts.length - 1];
+    } catch (error) {
+      console.warn('Error extracting filename:', error);
+      return 'achievement.pdf';
+    }
+  }
+
+  // تجهيز بيانات النشاط لـ PDF
+  private prepareActivityDataForPDF(): any {
+    // إضافة علامة أنها نسخة تجريبية وبيانات فردية
+    return {
+      isTesting: true,
+      testingMode: true,
+      source: 'achievement-form',
+      isSingleAchievement: true,
+      achievementType: 'individual',
+
+      // البيانات الأساسية
+      activityTitle: this.form.get('activityTitle')?.value,
+      activityDescription: this.form.get('activityDescription')?.value,
+      MainCriteria: this.form.get('MainCriteria')?.value,
+      SubCriteria: this.form.get('SubCriteria')?.value,
+      name: this.form.get('name')?.value || '',
+      Attachments: [...this.existingAttachments],
+      newAttachments: this.attachments.map(f => f.name),
+      date: new Date().toISOString(),
+      createdBy: localStorage.getItem('fullname') || '',
+      userId: localStorage.getItem('userId') || ''
+    };
+  }
+
+  // فتح PDF التجريبي - الحل الجديد
+  openPdfTesting(): void {
+    if (!this.pdfFilename) {
+      this.showWarning('لا يوجد ملف PDF متاح للعرض', 'يرجى إنشاء PDF أولاً');
+      return;
+    }
+
+    this.pdfLoading = true;
+
+    // استخدم الدالة viewPDF الموجودة في الـ service
+    this.activityService.viewPDF(this.pdfFilename).subscribe({
+      next: (blob: Blob) => {
+        this.pdfLoading = false;
+        const url = URL.createObjectURL(blob);
+        window.open(url, '_blank');
+      },
+      error: (err: any) => {
+        console.error('Error fetching PDF:', err);
+        this.pdfLoading = false;
+        this.showWarning('لا يمكن عرض الملف حالياً', 'يرجى المحاولة مرة أخرى');
+      }
+    });
+  }
+
+  // تنزيل PDF - الحل الجديد
+  downloadPdf(): void {
+    if (!this.pdfFilename) {
+      this.showWarning('لا يوجد ملف PDF متاح للتنزيل');
+      return;
+    }
+
+    const downloadName = this.generateDownloadName();
+
+    // استخدم الدالة downloadPDF الموجودة في الـ service
+    this.activityService.downloadPDF(this.pdfFilename, downloadName);
+  }
+
+  // حفظ اسم ملف PDF
+  private savePdfFilename(filename: string): void {
+    this.pdfFilename = filename;
+    localStorage.setItem('lastPdfFilename', filename);
+  }
+
+  // توليد اسم الملف للتنزيل
+  private generateDownloadName(): string {
+    const title = this.form.get('activityTitle')?.value
+      ? this.form.get('activityTitle')?.value.replace(/[^\w\u0600-\u06FF]/g, '_')
+      : 'انجاز';
+    const date = new Date().toISOString().split('T')[0];
+    return `انجاز_تجريبي_${title}_${date}.pdf`;
   }
 
   submitForReview() {
@@ -444,6 +577,8 @@ export class AddAchievementComponent implements OnInit {
 
   private cleanupForm() {
     localStorage.removeItem('editingDraft');
+    localStorage.removeItem('lastPdfFilename');
+    this.pdfFilename = null;
     this.resetForm();
   }
 
@@ -460,6 +595,9 @@ export class AddAchievementComponent implements OnInit {
     this.isEditing = false;
     this.draftId = '';
     this.originalDraftData = null;
+    this.pdfFilename = null;
+    this.pdfGenerating = false;
+    this.pdfLoading = false;
   }
 
   ngOnDestroy(): void {

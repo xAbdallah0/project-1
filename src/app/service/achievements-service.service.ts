@@ -2,6 +2,7 @@ import { Injectable } from '@angular/core';
 import { HttpClient, HttpHeaders, HttpParams } from '@angular/common/http';
 import { Observable, tap, throwError, catchError } from 'rxjs';
 import { Activity } from '../model/achievement';
+
 export interface PDFFile {
   _id?: string;
   pdfurl: string;
@@ -715,5 +716,36 @@ export class ActivityService {
           return throwError(() => error);
         })
       );
+  }
+
+
+   printTestingPdfFromData(data: any): Observable<any> {
+    return this.http.post(`http://localhost:3000/api/activities/generate-testing-pdf`, data);
+  }
+
+  // دالة جلب PDF للعرض
+  getPDF(apiUrl: string): Observable<Blob> {
+    return this.http.get(apiUrl, { responseType: 'blob' });
+  }
+
+  // دالة تنزيل PDF
+  DownloadPDF(filename: string, downloadName?: string): void {
+    const downloadUrl = `http://localhost:3000/api/activities/download-pdf/${encodeURIComponent(filename)}`;
+
+    this.http.get(downloadUrl, { responseType: 'blob' }).subscribe({
+      next: (blob: Blob) => {
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = downloadName || filename;
+        document.body.appendChild(a);
+        a.click();
+        window.URL.revokeObjectURL(url);
+        document.body.removeChild(a);
+      },
+      error: (err) => {
+        console.error('Error downloading PDF:', err);
+      }
+    });
   }
 }

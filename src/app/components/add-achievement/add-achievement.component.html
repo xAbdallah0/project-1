@@ -10,6 +10,48 @@
         <h2 class="mb-1">{{ isEditing ? 'تعديل المسودة' : 'إضافة إنجاز جديد' }}</h2>
         <p class="text-muted mb-4">{{ isEditing ? 'قم بتعديل بيانات المسودة' : 'قم بتعبئة جميع الحقول المطلوبة لتسجيل الإنجاز' }}</p>
 
+        <!-- قسم PDF Testing -->
+        <!-- قسم PDF Testing - يظهر دائماً -->
+<div class="card shadow-sm mb-4 p-3 bg-light rounded-4">
+  <div class="row align-items-center">
+    <div class="col-md-8">
+      <h5 class="mb-2">
+        <i class="fa fa-file-pdf me-2 text-danger"></i>
+        معاينة PDF قبل الحفظ النهائي
+      </h5>
+      <p class="text-muted small mb-0">
+        يمكنك إنشاء ومعاينة PDF للإنجاز بعد ملء البيانات الأساسية (العنوان، المعيار الرئيسي، والمعيار الفرعي).
+      </p>
+    </div>
+    <div class="col-md-4 text-end">
+      <div class="btn-group" role="group">
+        <!-- زر إنشاء/تحديث PDF -->
+        <button class="btn btn-primary" (click)="generateTestingPdf()"
+                [disabled]="pdfGenerating || form.invalid">
+          <i class="fa me-2" [class.fa-file-pdf]="!pdfGenerating"
+             [class.fa-spinner]="pdfGenerating" [class.fa-spin]="pdfGenerating"></i>
+          {{ pdfGenerating ? 'جاري الإنشاء...' : (pdfFilename ? 'تحديث PDF' : 'إنشاء PDF') }}
+        </button>
+
+        <!-- زر عرض PDF -->
+        <button class="btn btn-success" (click)="openPdfTesting()"
+                [disabled]="!pdfFilename || pdfLoading || pdfGenerating">
+          <i class="fa me-2" [class.fa-eye]="!pdfLoading"
+             [class.fa-spinner]="pdfLoading" [class.fa-spin]="pdfLoading"></i>
+          {{ pdfLoading ? 'جاري التحميل...' : 'عرض PDF' }}
+        </button>
+
+        <!-- زر تنزيل PDF -->
+        <button class="btn btn-outline-primary" (click)="downloadPdf()"
+                [disabled]="!pdfFilename || pdfLoading">
+          <i class="fa fa-download me-2"></i>
+          تنزيل PDF
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
         <form [formGroup]="form" (ngSubmit)="submitForReview()">
           <div class="card p-3 p-md-4 mb-3 shadow-sm border-0">
             <h5 class="mb-3 fw-bold text-primary">معلومات الإنجاز</h5>
