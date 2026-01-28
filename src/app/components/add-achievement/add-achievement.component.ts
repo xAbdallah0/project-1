@@ -309,43 +309,41 @@ export class AddAchievementComponent implements OnInit {
   // ==================== وظائف PDF Testing ====================
 
   // توليد PDF تجريبي - الحل الجديد
-  generateTestingPdf(): void {
-    if (this.form.invalid) {
-      this.markAllFieldsAsTouched();
-      this.showWarning(
-        'يرجى إكمال جميع الحقول المطلوبة',
-        'يجب ملء جميع البيانات الإلزامية قبل إنشاء PDF'
-      );
-      return;
-    }
-
-    this.pdfGenerating = true;
-
-    const activityData = this.prepareActivityDataForPDF();
-
-    // استخدم الدالة الموجودة بالفعل - generateAllActivitiesPDF
-    this.activityService.generateAllActivitiesPDF(activityData).subscribe({
-      next: (res: any) => {
-        this.pdfGenerating = false;
-
-        // معالجة الرد
-        if (res.success && res.file) {
-          const filename = this.extractFilenameFromUrl(res.file);
-          this.savePdfFilename(filename);
-
-          this.showSuccess('تم إنشاء PDF بنجاح');
-        } else {
-          this.showError(res.message || 'حدث خطأ في إنشاء PDF');
-        }
-      },
-      error: (err) => {
-        console.error('Error generating testing PDF:', err);
-        this.pdfGenerating = false;
-        this.showError(err?.error?.message || 'لم نتمكن من إنشاء PDF');
-      }
-    });
+generateTestingPdf(): void {
+  if (this.form.invalid) {
+    // ...
+    return;
   }
 
+  this.pdfGenerating = true;
+
+  // مش محتاج activityId دلوقتي
+  // const activityId = ...  ← شيله
+
+  // اختياري: لو عايز تبعت فلاتر
+  const filters = {
+    // user: "specific-user-id",     // اختياري
+    // from: "2025-01-01",
+    // to:   "2025-12-31",
+  };
+
+  this.activityService.generateAllActivitiesPDFtsting(filters).subscribe({
+    next: (res) => {
+      this.pdfGenerating = false;
+      if (res.success && res.file) {
+        window.open(res.file, '_blank');
+        this.showSuccess('تم إنشاء التقرير بنجاح');
+      } else {
+        this.showError(res.message || 'حدث خطأ');
+      }
+    },
+    error: (err) => {
+      this.pdfGenerating = false;
+      this.showError('فشل إنشاء الـ PDF');
+      console.error(err);
+    }
+  });
+}
   // استخراج اسم الملف من URL
   private extractFilenameFromUrl(url: string): string {
     if (!url) return 'achievement.pdf';

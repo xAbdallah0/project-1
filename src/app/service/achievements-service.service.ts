@@ -197,7 +197,32 @@ export class ActivityService {
         })
       );
   }
+generateAllActivitiesPDFtsting(filters?: any): Observable<ReportGenerationResponse> {
+  let params = new HttpParams();
 
+  if (filters) {
+    Object.entries(filters).forEach(([key, value]) => {
+      if (value) params = params.set(key, value.toString());
+    });
+  }
+
+  return this.http.get<ReportGenerationResponse>(
+    `${this.API_BASE_URL}/generate-pdf-testing`,
+    { params, headers: this.getAuthHeaders() }
+  )
+    .pipe(
+      tap((response) => {
+        if (response.success && response.file) {
+          response.file = this.fixArabicUrl(response.file);
+          response.filename = this.extractFilenameFromUrl(response.file);
+        }
+      }),
+      catchError((error) => {
+        console.error('Generate PDF Error:', error);
+        return throwError(() => error);
+      })
+    );
+}
   generateAllActivitiesDOCX(
     filters?: any
   ): Observable<ReportGenerationResponse> {
