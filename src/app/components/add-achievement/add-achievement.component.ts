@@ -308,79 +308,55 @@ export class AddAchievementComponent implements OnInit {
 
   // ==================== وظائف PDF Testing ====================
 
-  // توليد PDF تجريبي - الحل الجديد
-generateTestingPdf(): void {
-  if (this.form.invalid) {
-    // ...
-    return;
-  }
-
-  this.pdfGenerating = true;
-
-  // مش محتاج activityId دلوقتي
-  // const activityId = ...  ← شيله
-
-  // اختياري: لو عايز تبعت فلاتر
-  const filters = {
-    // user: "specific-user-id",     // اختياري
-    // from: "2025-01-01",
-    // to:   "2025-12-31",
-  };
-
-  this.activityService.generateAllActivitiesPDFtsting(filters).subscribe({
-    next: (res) => {
-      this.pdfGenerating = false;
-      if (res.success && res.file) {
-        window.open(res.file, '_blank');
-        this.showSuccess('تم إنشاء التقرير بنجاح');
-      } else {
-        this.showError(res.message || 'حدث خطأ');
-      }
-    },
-    error: (err) => {
-      this.pdfGenerating = false;
-      this.showError('فشل إنشاء الـ PDF');
-      console.error(err);
+  // توليد PDF تجريبي
+  generateTestingPdf(): void {
+    if (this.form.invalid) {
+      this.showValidationErrors();
+      return;
     }
-  });
-}
-  // استخراج اسم الملف من URL
-  private extractFilenameFromUrl(url: string): string {
-    if (!url) return 'achievement.pdf';
-    try {
-      const urlParts = url.split('/');
-      return urlParts[urlParts.length - 1];
-    } catch (error) {
-      console.warn('Error extracting filename:', error);
-      return 'achievement.pdf';
-    }
-  }
 
-  // تجهيز بيانات النشاط لـ PDF
-  private prepareActivityDataForPDF(): any {
-    // إضافة علامة أنها نسخة تجريبية وبيانات فردية
-    return {
-      isTesting: true,
-      testingMode: true,
-      source: 'achievement-form',
-      isSingleAchievement: true,
-      achievementType: 'individual',
+    this.pdfGenerating = true;
 
-      // البيانات الأساسية
+    // جمع أسماء المعايير
+    const mainCriteriaName = this.mainCriteria.find(
+      mc => mc._id === this.form.get('MainCriteria')?.value
+    )?.name || '';
+
+    const subCriteriaName = this.subCriteria.find(
+      sc => sc._id === this.form.get('SubCriteria')?.value
+    )?.name || '';
+
+    // تجهيز البيانات للإرسال
+    const activityData = {
       activityTitle: this.form.get('activityTitle')?.value,
       activityDescription: this.form.get('activityDescription')?.value,
-      MainCriteria: this.form.get('MainCriteria')?.value,
-      SubCriteria: this.form.get('SubCriteria')?.value,
-      name: this.form.get('name')?.value || '',
-      Attachments: [...this.existingAttachments],
-      newAttachments: this.attachments.map(f => f.name),
+      mainCriteriaName: mainCriteriaName,
+      subCriteriaName: subCriteriaName,
+      userName: this.form.get('name')?.value || localStorage.getItem('fullname') || 'مستخدم تجريبي',
+      name: this.form.get('name')?.value || localStorage.getItem('fullname') || '',
       date: new Date().toISOString(),
-      createdBy: localStorage.getItem('fullname') || '',
-      userId: localStorage.getItem('userId') || ''
+      Attachments: [...this.existingAttachments]
     };
+
+    this.activityService.generateTestingPDF(activityData).subscribe({
+      next: (res) => {
+        this.pdfGenerating = false;
+        if (res.success && res.file) {
+          this.savePdfFilename(res.fileName);
+          this.showSuccess('تم إنشاء PDF التجريبي بنجاح');
+        } else {
+          this.showError(res.message || 'حدث خطأ في إنشاء PDF');
+        }
+      },
+      error: (err) => {
+        this.pdfGenerating = false;
+        console.error('Error generating testing PDF:', err);
+        this.showError('فشل إنشاء الـ PDF التجريبي');
+      }
+    });
   }
 
-  // فتح PDF التجريبي - الحل الجديد
+  // فتح PDF التجريبي
   openPdfTesting(): void {
     if (!this.pdfFilename) {
       this.showWarning('لا يوجد ملف PDF متاح للعرض', 'يرجى إنشاء PDF أولاً');
@@ -389,7 +365,6 @@ generateTestingPdf(): void {
 
     this.pdfLoading = true;
 
-    // استخدم الدالة viewPDF الموجودة في الـ service
     this.activityService.viewPDF(this.pdfFilename).subscribe({
       next: (blob: Blob) => {
         this.pdfLoading = false;
@@ -404,7 +379,7 @@ generateTestingPdf(): void {
     });
   }
 
-  // تنزيل PDF - الحل الجديد
+  // تنزيل PDF
   downloadPdf(): void {
     if (!this.pdfFilename) {
       this.showWarning('لا يوجد ملف PDF متاح للتنزيل');
@@ -412,8 +387,6 @@ generateTestingPdf(): void {
     }
 
     const downloadName = this.generateDownloadName();
-
-    // استخدم الدالة downloadPDF الموجودة في الـ service
     this.activityService.downloadPDF(this.pdfFilename, downloadName);
   }
 
@@ -431,6 +404,8 @@ generateTestingPdf(): void {
     const date = new Date().toISOString().split('T')[0];
     return `انجاز_تجريبي_${title}_${date}.pdf`;
   }
+
+  // ==================== وظائف الحفظ والإرسال ====================
 
   submitForReview() {
     this.syncDescriptionToForm();
@@ -577,7 +552,7 @@ generateTestingPdf(): void {
     localStorage.removeItem('editingDraft');
     localStorage.removeItem('lastPdfFilename');
     this.pdfFilename = null;
-    this.resetForm();
+    this.router.navigate(['/achievements']);
   }
 
   resetForm() {
@@ -599,8 +574,10 @@ generateTestingPdf(): void {
   }
 
   ngOnDestroy(): void {
-    this.cleanupForm();
+    localStorage.removeItem('lastPdfFilename');
   }
+
+  // ==================== وظائف المرفقات ====================
 
   getFileName(attachmentUrl: string): string {
     if (!attachmentUrl) return 'ملف';
@@ -654,6 +631,8 @@ generateTestingPdf(): void {
     const fullUrl = this.getFullAttachmentUrl(attachmentUrl);
     window.open(fullUrl, '_blank');
   }
+
+  // ==================== رسائل SweetAlert ====================
 
   private showLoading(title: string, text: string): void {
     Swal.fire({

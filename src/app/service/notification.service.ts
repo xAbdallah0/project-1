@@ -12,7 +12,7 @@ export class NotificationService {
   private notificationsSubject = new BehaviorSubject<Notification[]>([]);
   public notifications$ = this.notificationsSubject.asObservable();
 
-  private API_URL = 'http://localhost:3000/notifications';
+  private API_URL = 'http://localhost:3000/api/notifications';
 
   constructor(private http: HttpClient) {
     this.initializeNotifications();

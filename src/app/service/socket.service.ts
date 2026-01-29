@@ -17,7 +17,7 @@ export interface Notification {
 })
 export class SocketService {
   private socket: any;
-  private readonly apiUrl = 'http://localhost:3000'; 
+  private readonly apiUrl = 'http://localhost:3000/api'; 
 
   constructor() {
     this.socket = ioClient.connect(this.apiUrl, {

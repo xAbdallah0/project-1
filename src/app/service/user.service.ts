@@ -7,7 +7,7 @@ import { User, Sector } from '../model/user';
   providedIn: 'root',
 })
 export class AdministrationService {
-  private baseUrl = 'http://localhost:3000/users';
+  private baseUrl = 'http://localhost:3000/api/users';
 
   constructor(private http: HttpClient) { }
 

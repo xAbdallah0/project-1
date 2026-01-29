@@ -44,7 +44,7 @@ export interface ReportGenerationResponse {
   providedIn: 'root',
 })
 export class ActivityService {
-  private readonly API_BASE_URL = 'http://localhost:3000/activity';
+  private readonly API_BASE_URL = 'http://localhost:3000/api/activity';
 
   constructor(private http: HttpClient) {}
 
@@ -222,6 +222,15 @@ generateAllActivitiesPDFtsting(filters?: any): Observable<ReportGenerationRespon
         return throwError(() => error);
       })
     );
+}
+
+
+generateTestingPDF(activityData: any): Observable<any> {
+  return this.http.post<any>(
+    `${this.API_BASE_URL}/generate-pdf-testing`,
+    { activityData },
+    { headers: this.getAuthHeaders() }
+  );
 }
   generateAllActivitiesDOCX(
     filters?: any
