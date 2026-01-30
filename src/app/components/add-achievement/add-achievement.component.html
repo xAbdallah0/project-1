@@ -96,6 +96,82 @@
               </div>
             </div>
 
+            <!-- Modal للجدول -->
+<div class="modal fade" [class.show]="showTableModal" [style.display]="showTableModal ? 'block' : 'none'"
+     tabindex="-1" role="dialog" *ngIf="showTableModal">
+  <div class="modal-backdrop fade show" (click)="closeTableModal()"></div>
+  <div class="modal-dialog modal-xl modal-dialog-centered" role="document" style="z-index: 1050;">
+    <div class="modal-content" dir="rtl">
+      <div class="modal-header bg-primary text-white">
+        <h5 class="modal-title">
+          <i class="fa fa-table me-2"></i>
+          {{ editingTableIndex !== null ? 'تعديل الجدول' : 'إنشاء جدول جديد' }}
+        </h5>
+      </div>
+
+      <div class="modal-body">
+        <!-- إعدادات حجم الجدول -->
+        <div class="row mb-4">
+          <div class="col-md-6">
+            <label class="form-label fw-bold">
+              <i class="fa fa-arrows-up-down me-1"></i>
+              عدد الصفوف:
+            </label>
+            <input type="number" class="form-control" [(ngModel)]="tableRows"
+                   min="1" max="20" (change)="changeTableSize()">
+          </div>
+          <div class="col-md-6">
+            <label class="form-label fw-bold">
+              <i class="fa fa-arrows-left-right me-1"></i>
+              عدد الأعمدة:
+            </label>
+            <input type="number" class="form-control" [(ngModel)]="tableCols"
+                   min="1" max="10" (change)="changeTableSize()">
+          </div>
+        </div>
+
+        <!-- الجدول القابل للتحرير -->
+        <div class="table-responsive" style="max-height: 400px; overflow-y: auto;">
+          <table class="table table-bordered table-hover editable-table">
+            <tbody>
+              <tr *ngFor="let row of currentTableData; let i = index; trackBy: trackByRow">
+                <td *ngFor="let cell of row; let j = index; trackBy: trackByCell" style="min-width: 120px;">
+                  <input
+                    type="text"
+                    class="form-control form-control-sm editable-cell"
+                    [id]="'cell-' + i + '-' + j"
+                    [value]="currentTableData[i][j]"
+                    (input)="updateCellValue(i, j, $event)"
+                    (focus)="trackFocus(i, j)"
+                    (blur)="trackFocus(i, j)"
+                    [placeholder]="'خلية ' + (i+1) + '-' + (j+1)"
+                    style="text-align: right; direction: rtl;">
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div class="alert alert-info mt-3">
+          <i class="fa fa-info-circle me-2"></i>
+          <strong>ملاحظة:</strong> سيتم إضافة الجدول إلى وصف الإنجاز. يمكنك تعديل محتوى كل خلية.
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" (click)="closeTableModal()">
+          <i class="fa fa-x-lg me-2"></i>
+          إلغاء
+        </button>
+        <button type="button" class="btn btn-success" (click)="saveTable()">
+          <i class="fa fa-check-lg me-2"></i>
+          {{ editingTableIndex !== null ? 'تحديث الجدول' : 'إضافة الجدول' }}
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
             <div class="mb-3">
               <label class="form-label fw-semibold">وصف الإنجاز <span class="text-danger">*</span></label>
 

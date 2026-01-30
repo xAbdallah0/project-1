@@ -522,3 +522,63 @@
   }
 }
 
+
+/* تنسيقات الجداول وأدوات المحرر */
+.editor-toolbar {
+  background-color: #f8f9fa;
+  padding: 8px;
+  border-radius: 5px;
+  border: 1px solid #dee2e6;
+  margin-bottom: 10px;
+}
+
+.editor-toolbar .btn {
+  padding: 4px 8px;
+  font-size: 12px;
+}
+
+.editor {
+  min-height: 150px;
+  max-height: 400px;
+  overflow-y: auto;
+  background-color: white;
+  line-height: 1.6;
+  padding: 10px;
+}
+
+.editor:focus {
+  outline: 2px solid #0d6efd;
+  outline-offset: -1px;
+  border-color: #0d6efd;
+}
+
+/* تنسيقات الجداول المضافة */
+.achievement-table {
+  font-size: 14px;
+  background-color: white;
+}
+
+.table-container {
+  margin: 15px 0;
+  border: 1px solid #dee2e6;
+  border-radius: 5px;
+  overflow: hidden;
+}
+
+/* أزرار تعديل وحذف الجداول */
+.btn-group .btn {
+  padding: 4px 8px;
+  font-size: 12px;
+}
+
+.btn-warning {
+  background-color: #ffc107;
+  border-color: #ffc107;
+  color: #212529;
+}
+
+.btn-warning:hover {
+  background-color: #e0a800;
+  border-color: #d39e00;
+}
+

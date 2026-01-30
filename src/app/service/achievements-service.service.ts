@@ -265,20 +265,23 @@ generateTestingPDF(activityData: any): Observable<any> {
   }
 
   viewPDF(filename: string): Observable<Blob> {
-    const url = `${this.API_BASE_URL}/view-pdf/${filename}`;
-    const headers = this.getAuthHeaders();
-    return this.http
-      .get(url, {
-        headers,
-        responseType: 'blob',
+  // تشفير اسم الملف لحماية الأحرف العربية
+  const encodedFilename = encodeURIComponent(filename);
+  const url = `${this.API_BASE_URL}/view-pdf/${encodedFilename}`;
+
+  const headers = this.getAuthHeaders();
+  return this.http
+    .get(url, {
+      headers,
+      responseType: 'blob',
+    })
+    .pipe(
+      catchError((error) => {
+        console.error('View PDF Error:', error);
+        return throwError(() => error);
       })
-      .pipe(
-        catchError((error) => {
-          console.error('View PDF Error:', error);
-          return throwError(() => error);
-        })
-      );
-  }
+    );
+}
 
   openPDF(filename: string): void {
     const token =

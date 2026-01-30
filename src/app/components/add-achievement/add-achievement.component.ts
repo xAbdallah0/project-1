@@ -5,7 +5,7 @@ import {
   ViewChild,
   HostListener,
 } from '@angular/core';
-import { FormBuilder, FormGroup, Validators } from '@angular/forms';
+import { FormBuilder, FormGroup, Validators, FormArray } from '@angular/forms';
 import { MainCriterion } from 'src/app/model/criteria';
 import { CriteriaService, SubCriteria } from 'src/app/service/criteria.service';
 import Swal from 'sweetalert2';
@@ -21,6 +21,7 @@ export class AddAchievementComponent implements OnInit {
   @ViewChild('descriptionEditor', { static: true })
   descriptionEditor!: ElementRef<HTMLDivElement>;
 
+  // متغيرات النموذج الأساسية
   form!: FormGroup;
   attachments: File[] = [];
   existingAttachments: string[] = [];
@@ -34,6 +35,15 @@ export class AddAchievementComponent implements OnInit {
   originalDraftData: any = null;
   deletedAttachments: string[] = [];
   isMobileView = false;
+
+  // متغيرات الجداول
+  showTableModal = false;
+  tableRows = 3;
+  tableCols = 3;
+  currentTableData: any[][] = [];
+  editingTableIndex: number | null = null;
+  tablesArray: any[] = [];
+  private lastFocusedCell: { row: number, col: number } | null = null;
 
   // متغيرات PDF Testing
   pdfGenerating = false;
@@ -64,6 +74,8 @@ export class AddAchievementComponent implements OnInit {
     this.isMobileView = window.innerWidth < 992;
   }
 
+  // ==================== وظائف النموذج الأساسية ====================
+
   checkEditMode(): void {
     this.route.queryParams.subscribe((params) => {
       this.isEditing = params['edit'] === 'true';
@@ -93,9 +105,10 @@ export class AddAchievementComponent implements OnInit {
 
   populateFormWithDraftData(): void {
     if (this.originalDraftData && this.form) {
+      // تحميل البيانات الأساسية
       this.form.patchValue({
         activityTitle: this.originalDraftData.activityTitle,
-        activityDescription: this.originalDraftData.activityDescription,
+        activityDescription: this.originalDraftData.activityDescription || this.extractPlainText(this.originalDraftData.activityDescription),
         MainCriteria:
           this.originalDraftData.MainCriteria?._id ||
           this.originalDraftData.MainCriteria,
@@ -105,6 +118,7 @@ export class AddAchievementComponent implements OnInit {
         name: this.originalDraftData.name,
       });
 
+      // تحميل المرفقات الحالية
       if (
         this.originalDraftData.Attachments &&
         Array.isArray(this.originalDraftData.Attachments)
@@ -114,22 +128,31 @@ export class AddAchievementComponent implements OnInit {
         this.existingAttachments = [];
       }
 
+      // تحميل الجداول الحالية
+      if (this.originalDraftData.tables && Array.isArray(this.originalDraftData.tables)) {
+        this.tablesArray = [...this.originalDraftData.tables];
+
+        // إضافة الجداول إلى FormArray
+        this.tablesFormArray.clear();
+        this.originalDraftData.tables.forEach((table: any) => {
+          this.tablesFormArray.push(this.fb.control(table));
+        });
+      }
+
+      // تحميل النص في المحرر (النص فقط بدون جداول)
+      if (this.descriptionEditor) {
+        this.descriptionEditor.nativeElement.innerHTML =
+          this.extractPlainText(this.originalDraftData.activityDescription) ||
+          '';
+      }
+
+      // تحميل المعيار الرئيسي والفرعي
       const mainCriteriaId =
         this.originalDraftData.MainCriteria?._id ||
         this.originalDraftData.MainCriteria;
       if (mainCriteriaId) {
         this.selectedMain = mainCriteriaId;
         this.getSubCriteria(mainCriteriaId);
-      }
-
-      if (
-        this.descriptionEditor &&
-        this.originalDraftData.activityDescription
-      ) {
-        const plainText = this.stripHTML(
-          this.originalDraftData.activityDescription
-        );
-        this.descriptionEditor.nativeElement.innerText = plainText;
       }
     }
   }
@@ -149,9 +172,15 @@ export class AddAchievementComponent implements OnInit {
         MainCriteria: ['', Validators.required],
         SubCriteria: ['', Validators.required],
         name: [''],
+        tables: this.fb.array([]) // FormArray للجداول
       },
       { updateOn: 'change' }
     );
+  }
+
+  // الحصول على FormArray للجداول
+  get tablesFormArray(): FormArray {
+    return this.form.get('tables') as FormArray;
   }
 
   loadMainCriteria(): void {
@@ -204,10 +233,15 @@ export class AddAchievementComponent implements OnInit {
   }
 
   syncDescriptionToForm() {
-    let plainText = this.descriptionEditor.nativeElement.innerText || '';
+    let htmlContent = this.descriptionEditor.nativeElement.innerHTML || '';
 
-    plainText = this.cleanText(plainText);
+    // استخراج النص فقط (بدون أي HTML)
+    const plainText = this.extractPlainText(htmlContent);
 
+    // حفظ النص فقط في activityDescription
+    this.form.get('activityDescription')?.setValue(plainText);
+
+    // التحقق من الطول للنص فقط
     if (plainText.length < 10) {
       this.form.get('activityDescription')?.setErrors({ minlength: true });
     } else if (plainText.length > 1000) {
@@ -216,8 +250,19 @@ export class AddAchievementComponent implements OnInit {
       this.form.get('activityDescription')?.setErrors(null);
     }
 
-    this.form.get('activityDescription')?.setValue(plainText);
     this.form.get('activityDescription')?.markAsTouched();
+  }
+
+  private extractPlainText(html: string): string {
+    if (!html) return '';
+
+    // إنشاء عنصر مؤقت
+    const tempDiv = document.createElement('div');
+    tempDiv.innerHTML = html;
+
+    // استخراج النص فقط من جميع العناصر
+    const text = tempDiv.textContent || tempDiv.innerText || '';
+    return this.cleanText(text);
   }
 
   private cleanText(text: string): string {
@@ -241,74 +286,366 @@ export class AddAchievementComponent implements OnInit {
     );
   }
 
-  private stripHTML(html: string): string {
-    if (!html) return '';
-    const div = document.createElement('div');
-    div.innerHTML = html;
-    const text = div.textContent || div.innerText || '';
-    return this.cleanText(text);
-  }
-
   getDescriptionLength(): number {
     const description = this.form.get('activityDescription')?.value;
     if (!description) return 0;
     return description.length;
   }
 
-  onFilesSelected(ev: Event) {
-    const input = ev.target as HTMLInputElement;
-    if (!input.files) return;
+  // ==================== وظائف الجداول المحسنة ====================
 
-    const files = Array.from(input.files);
-    const totalFiles =
-      this.attachments.length + files.length + this.existingAttachments.length;
+  openTableModal(tableIndex?: number): void {
+    this.showTableModal = true;
+    this.editingTableIndex = tableIndex !== undefined ? tableIndex : null;
 
-    if (totalFiles > this.maxFiles) {
-      this.showWarning(`الحد الأقصى ${this.maxFiles} ملفات فقط.`);
+    if (tableIndex !== undefined && tableIndex !== null) {
+      const existingTable = this.getExistingTable(tableIndex);
+      if (existingTable) {
+        this.tableRows = existingTable.rows;
+        this.tableCols = existingTable.cols;
+        this.currentTableData = JSON.parse(JSON.stringify(existingTable.data));
+      } else {
+        this.resetTableModal();
+      }
+    } else {
+      this.resetTableModal();
+    }
+
+    setTimeout(() => {
+      this.focusFirstCell();
+    }, 100);
+  }
+
+  onTableSizeChange(): void {
+    // تأكد من أن القيم ضمن النطاق المسموح
+    this.tableRows = Math.max(1, Math.min(50, this.tableRows || 3));
+    this.tableCols = Math.max(1, Math.min(20, this.tableCols || 3));
+
+    // تحديث الجدول بنفس البيانات الحالية
+    this.updateTableSize(this.tableRows, this.tableCols);
+  }
+
+  updateTableSize(newRows: number, newCols: number): void {
+    // إنشاء جدول جديد بالأبعاد الجديدة
+    const newTable: any[][] = [];
+
+    for (let i = 0; i < newRows; i++) {
+      newTable[i] = [];
+      for (let j = 0; j < newCols; j++) {
+        // الحفاظ على البيانات القديمة إن وجدت
+        if (this.currentTableData[i] && this.currentTableData[i][j] !== undefined) {
+          newTable[i][j] = this.currentTableData[i][j];
+        } else {
+          newTable[i][j] = '';
+        }
+      }
+    }
+
+    this.currentTableData = newTable;
+
+    // تحديث التركيز بعد التغيير
+    setTimeout(() => {
+      this.restoreFocus();
+    }, 100);
+  }
+
+  resetTableModal(): void {
+    this.tableRows = 3;
+    this.tableCols = 3;
+    this.currentTableData = this.createEmptyTable(3, 3);
+    this.lastFocusedCell = null;
+  }
+
+  createEmptyTable(rows: number, cols: number): any[][] {
+    const table: any[][] = [];
+    for (let i = 0; i < rows; i++) {
+      table[i] = [];
+      for (let j = 0; j < cols; j++) {
+        table[i][j] = '';
+      }
+    }
+    return table;
+  }
+
+  changeTableSize(): void {
+    this.onTableSizeChange();
+  }
+
+  saveTable(): void {
+    if (!this.currentTableData || this.currentTableData.length === 0) {
+      Swal.fire({
+        icon: 'error',
+        title: 'خطأ',
+        text: 'الجدول فارغ!',
+        timer: 1500
+      });
       return;
     }
 
-    for (const f of files) {
-      const sizeMB = f.size / (1024 * 1024);
-      const ext = f.name.split('.').pop()?.toLowerCase() || '';
-      const allowedImage = ['png', 'jpg', 'jpeg', 'webp', 'gif', 'bmp'];
-
-      if (!(ext === 'pdf' || allowedImage.includes(ext))) {
-        this.showError('نوع ملف غير مدعوم. يُسمح فقط بالصور أو PDF.');
-        continue;
-      }
-      if (sizeMB > this.maxFileSizeMB) {
-        this.showError(`حجم الملف أكبر من ${this.maxFileSizeMB}MB.`);
-        continue;
-      }
-      this.attachments.push(f);
+    // التحقق من أن الأبعاد صحيحة
+    if (this.tableRows < 1 || this.tableRows > 50 || this.tableCols < 1 || this.tableCols > 20) {
+      this.showError('عدد الصفوف يجب أن يكون بين 1 و 50، وعدد الأعمدة بين 1 و 20');
+      return;
     }
 
-    input.value = '';
+    // التحقق من عدد الجداول
+    if (this.tablesArray.length >= 5 && this.editingTableIndex === null) {
+      this.showError('الحد الأقصى 5 جداول فقط');
+      return;
+    }
+
+    // تنظيف البيانات الفارغة النهائية
+    const cleanedData = this.cleanTableData(this.currentTableData);
+
+    const tableData = {
+      rows: this.tableRows,
+      cols: this.tableCols,
+      data: cleanedData,
+      index: this.editingTableIndex !== null ? this.editingTableIndex : this.tablesArray.length
+    };
+
+    if (this.editingTableIndex !== null && this.editingTableIndex >= 0) {
+      // تحديث جدول موجود
+      this.tablesArray[this.editingTableIndex] = tableData;
+      this.tablesFormArray.at(this.editingTableIndex).setValue(tableData);
+    } else {
+      // إضافة جدول جديد
+      this.tablesArray.push(tableData);
+      this.tablesFormArray.push(this.fb.control(tableData));
+    }
+
+    this.closeTableModal();
+
+    Swal.fire({
+      icon: 'success',
+      title: this.editingTableIndex !== null ? 'تم تحديث الجدول بنجاح' : 'تم إضافة الجدول بنجاح',
+      timer: 1500,
+      showConfirmButton: false
+    });
   }
 
-  removeAttachment(index: number) {
-    this.attachments.splice(index, 1);
-    this.showSuccess('تم حذف الملف بنجاح.');
+  private cleanTableData(data: any[][]): any[][] {
+    // إزالة الصفوف الفارغة تماماً
+    const cleanedData = data.filter(row =>
+      Array.isArray(row) && row.some(cell => cell && cell.toString().trim() !== '')
+    );
+
+    // إذا لم تبقى أي صفوف، إرجاع جدول فارغ بأبعاد صحيحة
+    if (cleanedData.length === 0) {
+      return this.createEmptyTable(this.tableRows, this.tableCols);
+    }
+
+    return cleanedData;
   }
 
-  removeExistingAttachment(index: number) {
-    const attachmentToRemove = this.existingAttachments[index];
+  generateTableHTML(data: any[][]): string {
+    if (!data || data.length === 0 || !Array.isArray(data)) {
+      return '<p class="text-muted">جدول فارغ</p>';
+    }
 
-    this.showConfirm('تأكيد الحذف', 'هل تريد حذف هذا المرفق؟', 'warning').then(
-      (result) => {
-        if (result.isConfirmed) {
-          this.deletedAttachments.push(attachmentToRemove);
-          this.existingAttachments.splice(index, 1);
-          this.showSuccess('تم حذف الملف بنجاح.');
+    let html = `
+      <div class="table-responsive mt-3">
+        <table class="table table-bordered table-hover achievement-table"
+              style="width: 100%; border-collapse: collapse; margin: 10px 0; direction: rtl;">
+          <tbody>`;
+
+    data.forEach((row, rowIndex) => {
+      if (!Array.isArray(row)) return;
+
+      html += '<tr>';
+      row.forEach((cell, colIndex) => {
+        const cellContent = cell || '&nbsp;';
+        html += `
+          <td style="border: 1px solid #dee2e6; padding: 8px;
+                    text-align: right; vertical-align: middle;">
+            ${cellContent}
+          </td>`;
+      });
+      html += '</tr>';
+    });
+
+    html += `
+          </tbody>
+        </table>
+      </div>`;
+
+    return html;
+  }
+
+  getExistingTable(index: number): any {
+    if (index >= 0 && index < this.tablesArray.length) {
+      return this.tablesArray[index];
+    }
+    return null;
+  }
+
+  removeTable(index: number): void {
+    Swal.fire({
+      title: 'تأكيد الحذف',
+      text: 'هل تريد حذف هذا الجدول؟',
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonText: 'نعم، احذف',
+      cancelButtonText: 'إلغاء',
+      reverseButtons: true
+    }).then((result) => {
+      if (result.isConfirmed) {
+        // حذف من المصفوفة
+        this.tablesArray.splice(index, 1);
+
+        // حذف من FormArray
+        if (index < this.tablesFormArray.length) {
+          this.tablesFormArray.removeAt(index);
+        }
+
+        Swal.fire({
+          icon: 'success',
+          title: 'تم حذف الجدول بنجاح',
+          timer: 1500,
+          showConfirmButton: false
+        });
+      }
+    });
+  }
+
+  getColumnHeaders(): number[] {
+    return Array.from({ length: this.tableCols }, (_, i) => i);
+  }
+
+  getEmptyCells(row: any[]): number[] {
+    const emptyCellsCount = Math.max(0, this.tableCols - row.length);
+    return Array.from({ length: emptyCellsCount }, (_, i) => i);
+  }
+
+  getEmptyRows(): number[] {
+    const emptyRowsCount = Math.max(0, this.tableRows - this.currentTableData.length);
+    return Array.from({ length: emptyRowsCount }, (_, i) => i);
+  }
+
+  getEmptyColumns(): number[] {
+    return Array.from({ length: this.tableCols }, (_, i) => i);
+  }
+
+  clearAllCells(): void {
+    Swal.fire({
+      title: 'تأكيد المسح',
+      text: 'هل تريد مسح جميع محتويات الجدول؟',
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonText: 'نعم، امسح الكل',
+      cancelButtonText: 'إلغاء',
+      reverseButtons: true
+    }).then((result) => {
+      if (result.isConfirmed) {
+        for (let i = 0; i < this.currentTableData.length; i++) {
+          for (let j = 0; j < this.currentTableData[i].length; j++) {
+            this.currentTableData[i][j] = '';
+          }
+        }
+
+        // تحديث جميع خلايا الإدخال
+        setTimeout(() => {
+          const inputs = document.querySelectorAll('.editable-cell');
+          inputs.forEach((input: any) => {
+            if (input) input.value = '';
+          });
+        }, 50);
+
+        this.showSuccess('تم مسح جميع خلايا الجدول');
+      }
+    });
+  }
+
+  fillWithSampleData(): void {
+    const sampleData = [
+      ['المهمة', 'المسؤول', 'الموعد', 'الحالة'],
+      ['تحضير التقرير', 'أحمد', '2024-01-15', 'مكتمل'],
+      ['مراجعة البيانات', 'محمد', '2024-01-20', 'قيد التنفيذ'],
+      ['تحليل النتائج', 'سارة', '2024-01-25', 'معلق']
+    ];
+
+    // حساب الصفوف والأعمدة المطلوبة
+    const sampleRows = Math.min(sampleData.length, this.tableRows);
+    const sampleCols = Math.min(sampleData[0]?.length || 4, this.tableCols);
+
+    // تعبئة البيانات
+    for (let i = 0; i < sampleRows; i++) {
+      for (let j = 0; j < sampleCols; j++) {
+        if (!this.currentTableData[i]) this.currentTableData[i] = [];
+        this.currentTableData[i][j] = sampleData[i][j] || '';
+      }
+    }
+
+    // تحديث جميع خلايا الإدخال
+    setTimeout(() => {
+      for (let i = 0; i < sampleRows; i++) {
+        for (let j = 0; j < sampleCols; j++) {
+          const input = document.getElementById(`cell-${i}-${j}`) as HTMLInputElement;
+          if (input) {
+            input.value = sampleData[i][j] || '';
+          }
         }
       }
-    );
+    }, 50);
+
+    this.showSuccess('تم تعبئة الجدول ببيانات تجريبية');
+  }
+
+  updateCellValue(rowIndex: number, colIndex: number, event: Event): void {
+    const input = event.target as HTMLInputElement;
+    const value = input.value;
+
+    // التأكد من وجود الصف
+    if (!this.currentTableData[rowIndex]) {
+      this.currentTableData[rowIndex] = [];
+    }
+
+    // تحديث قيمة الخلية
+    this.currentTableData[rowIndex][colIndex] = value;
+    this.lastFocusedCell = { row: rowIndex, col: colIndex };
+  }
+
+  trackFocus(rowIndex: number, colIndex: number): void {
+    this.lastFocusedCell = { row: rowIndex, col: colIndex };
+  }
+
+  restoreFocus(): void {
+    if (this.lastFocusedCell) {
+      const { row, col } = this.lastFocusedCell;
+      const cellId = `cell-${row}-${col}`;
+      const cellInput = document.getElementById(cellId);
+      if (cellInput) {
+        cellInput.focus();
+      }
+    } else {
+      this.focusFirstCell();
+    }
+  }
+
+  focusFirstCell(): void {
+    const firstCell = document.getElementById('cell-0-0');
+    if (firstCell) {
+      firstCell.focus();
+    }
+  }
+
+  closeTableModal(): void {
+    this.showTableModal = false;
+    this.editingTableIndex = null;
+    this.lastFocusedCell = null;
+    this.resetTableModal();
+  }
+
+  trackByRow(index: number, row: any[]): any {
+    return index;
+  }
+
+  trackByCell(index: number, cell: any): any {
+    return index;
   }
 
   // ==================== وظائف PDF Testing ====================
 
-  // توليد PDF تجريبي
   generateTestingPdf(): void {
     if (this.form.invalid) {
       this.showValidationErrors();
@@ -317,46 +654,55 @@ export class AddAchievementComponent implements OnInit {
 
     this.pdfGenerating = true;
 
-    // جمع أسماء المعايير
-    const mainCriteriaName = this.mainCriteria.find(
-      mc => mc._id === this.form.get('MainCriteria')?.value
-    )?.name || '';
-
-    const subCriteriaName = this.subCriteria.find(
-      sc => sc._id === this.form.get('SubCriteria')?.value
-    )?.name || '';
-
-    // تجهيز البيانات للإرسال
     const activityData = {
       activityTitle: this.form.get('activityTitle')?.value,
       activityDescription: this.form.get('activityDescription')?.value,
-      mainCriteriaName: mainCriteriaName,
-      subCriteriaName: subCriteriaName,
+      mainCriteriaName: this.mainCriteria.find(
+        mc => mc._id === this.form.get('MainCriteria')?.value
+      )?.name || '',
+      subCriteriaName: this.subCriteria.find(
+        sc => sc._id === this.form.get('SubCriteria')?.value
+      )?.name || '',
       userName: this.form.get('name')?.value || localStorage.getItem('fullname') || 'مستخدم تجريبي',
       name: this.form.get('name')?.value || localStorage.getItem('fullname') || '',
       date: new Date().toISOString(),
-      Attachments: [...this.existingAttachments]
+      Attachments: [...this.existingAttachments],
+      tables: this.tablesArray // إضافة الجداول إلى PDF
     };
+
+    console.log('📤 إرسال بيانات لإنشاء PDF تجريبي:', activityData);
 
     this.activityService.generateTestingPDF(activityData).subscribe({
       next: (res) => {
         this.pdfGenerating = false;
-        if (res.success && res.file) {
-          this.savePdfFilename(res.fileName);
+        if (res.success && res.fileName) {
+          console.log('✅ استجابة PDF:', res);
+
+          let filename = res.fileName;
+          if (res.filePath) {
+            const pathParts = res.filePath.split('/');
+            filename = pathParts[pathParts.length - 1];
+
+            if (res.filePath.includes('/testing/')) {
+              filename = `testing/${filename}`;
+            }
+          }
+
+          this.savePdfFilename(filename);
           this.showSuccess('تم إنشاء PDF التجريبي بنجاح');
         } else {
+          console.error('❌ خطأ في الاستجابة:', res);
           this.showError(res.message || 'حدث خطأ في إنشاء PDF');
         }
       },
       error: (err) => {
         this.pdfGenerating = false;
-        console.error('Error generating testing PDF:', err);
-        this.showError('فشل إنشاء الـ PDF التجريبي');
+        console.error('❌ خطأ في إنشاء PDF:', err);
+        this.showError('فشل إنشاء الـ PDF التجريبي: ' + err.message);
       }
     });
   }
 
-  // فتح PDF التجريبي
   openPdfTesting(): void {
     if (!this.pdfFilename) {
       this.showWarning('لا يوجد ملف PDF متاح للعرض', 'يرجى إنشاء PDF أولاً');
@@ -365,7 +711,14 @@ export class AddAchievementComponent implements OnInit {
 
     this.pdfLoading = true;
 
-    this.activityService.viewPDF(this.pdfFilename).subscribe({
+    let fullFilename = this.pdfFilename;
+    if (!fullFilename.startsWith('testing/') && fullFilename.startsWith('تقرير_انجاز_تجريبي')) {
+      fullFilename = `testing/${fullFilename}`;
+    }
+
+    console.log('📂 محاولة فتح الملف:', fullFilename);
+
+    this.activityService.viewPDF(fullFilename).subscribe({
       next: (blob: Blob) => {
         this.pdfLoading = false;
         const url = URL.createObjectURL(blob);
@@ -374,12 +727,16 @@ export class AddAchievementComponent implements OnInit {
       error: (err: any) => {
         console.error('Error fetching PDF:', err);
         this.pdfLoading = false;
-        this.showWarning('لا يمكن عرض الملف حالياً', 'يرجى المحاولة مرة أخرى');
+
+        const fileUrl = `http://localhost:3000/generated-files/${fullFilename}`;
+        console.log('🔗 محاولة فتح الرابط:', fileUrl);
+        window.open(fileUrl, '_blank');
+
+        this.showWarning('تم فتح الملف في نافذة جديدة', 'إذا لم يعمل، يرجى التحقق من المسار');
       }
     });
   }
 
-  // تنزيل PDF
   downloadPdf(): void {
     if (!this.pdfFilename) {
       this.showWarning('لا يوجد ملف PDF متاح للتنزيل');
@@ -387,16 +744,28 @@ export class AddAchievementComponent implements OnInit {
     }
 
     const downloadName = this.generateDownloadName();
-    this.activityService.downloadPDF(this.pdfFilename, downloadName);
+
+    let fullFilename = this.pdfFilename;
+    if (!fullFilename.startsWith('testing/') && fullFilename.startsWith('تقرير_انجاز_تجريبي')) {
+      fullFilename = `testing/${fullFilename}`;
+    }
+
+    this.activityService.downloadPDF(fullFilename, downloadName);
   }
 
-  // حفظ اسم ملف PDF
   private savePdfFilename(filename: string): void {
-    this.pdfFilename = filename;
-    localStorage.setItem('lastPdfFilename', filename);
+    if (filename) {
+      if (!filename.includes('/testing/') && filename.startsWith('تقرير_انجاز_تجريبي')) {
+        this.pdfFilename = `testing/${filename}`;
+      } else if (filename.includes('testing/')) {
+        this.pdfFilename = filename;
+      } else {
+        this.pdfFilename = filename;
+      }
+      localStorage.setItem('lastPdfFilename', this.pdfFilename);
+    }
   }
 
-  // توليد اسم الملف للتنزيل
   private generateDownloadName(): string {
     const title = this.form.get('activityTitle')?.value
       ? this.form.get('activityTitle')?.value.replace(/[^\w\u0600-\u06FF]/g, '_')
@@ -413,6 +782,11 @@ export class AddAchievementComponent implements OnInit {
 
     if (this.form.invalid) {
       this.showValidationErrors();
+      return;
+    }
+
+    // التحقق من الجداول
+    if (!this.validateTables()) {
       return;
     }
 
@@ -438,13 +812,48 @@ export class AddAchievementComponent implements OnInit {
     }
   }
 
+  private validateTables(): boolean {
+    // التحقق من عدد الجداول
+    if (this.tablesArray.length > 5) {
+      this.showError('الحد الأقصى 5 جداول فقط');
+      return false;
+    }
+
+    // التحقق من أن الجداول غير فارغة
+    for (let i = 0; i < this.tablesArray.length; i++) {
+      const table = this.tablesArray[i];
+      if (!table.data || table.data.length === 0 || !Array.isArray(table.data)) {
+        this.showError(`الجدول رقم ${i + 1} فارغ أو غير صالح`);
+        return false;
+      }
+
+      // التحقق من أن كل صف يحتوي على أعمدة
+      for (let j = 0; j < table.data.length; j++) {
+        if (!Array.isArray(table.data[j])) {
+          this.showError(`الصف ${j + 1} في الجدول ${i + 1} غير صالح`);
+          return false;
+        }
+      }
+    }
+
+    return true;
+  }
+
   private addNewActivity(status: string, saveStatus: string) {
     const payload = this.createFormData(status, saveStatus);
 
-    this.showLoading('جاري الحفظ...', 'يرجى الانتظار قليلاً.');
+    Swal.fire({
+      title: 'جاري الحفظ...',
+      text: 'يرجى الانتظار قليلاً.',
+      icon: 'info',
+      showConfirmButton: false,
+      allowOutsideClick: false,
+      didOpen: () => Swal.showLoading(),
+    });
 
     this.activityService.addActivity(payload).subscribe({
       next: () => {
+        Swal.close();
         const message =
           saveStatus === 'مسودة'
             ? 'تم حفظ المسودة بنجاح'
@@ -454,6 +863,7 @@ export class AddAchievementComponent implements OnInit {
         });
       },
       error: (err) => {
+        Swal.close();
         console.error('خطأ أثناء الحفظ:', err);
         this.showError(err?.error?.message || 'حدث خطأ أثناء الحفظ.');
       },
@@ -463,10 +873,18 @@ export class AddAchievementComponent implements OnInit {
   private updateDraft(status: string, saveStatus: string) {
     const payload = this.createFormData(status, saveStatus);
 
-    this.showLoading('جاري التحديث...', 'يرجى الانتظار قليلاً.');
+    Swal.fire({
+      title: 'جاري التحديث...',
+      text: 'يرجى الانتظار قليلاً.',
+      icon: 'info',
+      showConfirmButton: false,
+      allowOutsideClick: false,
+      didOpen: () => Swal.showLoading(),
+    });
 
     this.activityService.updateDraftActivity(this.draftId, payload).subscribe({
       next: (response) => {
+        Swal.close();
         const message =
           saveStatus === 'مسودة'
             ? 'تم تحديث المسودة بنجاح'
@@ -476,6 +894,7 @@ export class AddAchievementComponent implements OnInit {
         });
       },
       error: (err) => {
+        Swal.close();
         console.error('خطأ أثناء التحديث:', err);
         this.showError(err?.error?.message || 'حدث خطأ أثناء التحديث.');
       },
@@ -497,6 +916,12 @@ export class AddAchievementComponent implements OnInit {
       this.form.value.name || localStorage.getItem('fullname') || ''
     );
 
+    // إضافة الجداول
+    if (this.tablesArray.length > 0) {
+      payload.append('tables', JSON.stringify(this.tablesArray));
+    }
+
+    // إضافة المرفقات
     this.attachments.forEach((file) => {
       payload.append('Attachments', file, file.name);
     });
@@ -524,24 +949,30 @@ export class AddAchievementComponent implements OnInit {
     if (this.form.get('activityTitle')?.invalid)
       errors.push('• العنوان مطلوب (حتى 150 حرف)');
     if (this.form.get('activityDescription')?.invalid)
-      errors.push('• الوصف مطلوب (10 أحرف على الأقل)');
+      errors.push('• الوصف مطلوب (10 أحرف على الأقل، حتى 1000 حرف)');
     if (this.form.get('MainCriteria')?.invalid)
       errors.push('• المعيار الرئيسي مطلوب');
     if (this.form.get('SubCriteria')?.invalid)
       errors.push('• المعيار الفرعي مطلوب');
 
-    this.showWarning(
-      'بيانات ناقصة',
-      `يرجى ملء جميع الحقول المطلوبة:<br>${errors.join('<br>')}`
-    );
+    Swal.fire({
+      title: 'بيانات ناقصة',
+      html: `يرجى ملء جميع الحقول المطلوبة:<br>${errors.join('<br>')}`,
+      icon: 'warning',
+      confirmButtonText: 'حسناً',
+    });
   }
 
   cancel() {
-    this.showConfirm(
-      'تأكيد الإلغاء',
-      'هل تريد إلغاء العملية؟',
-      'question'
-    ).then((result) => {
+    Swal.fire({
+      title: 'تأكيد الإلغاء',
+      text: 'هل تريد إلغاء العملية؟',
+      icon: 'question',
+      showCancelButton: true,
+      confirmButtonText: 'نعم',
+      cancelButtonText: 'إلغاء',
+      reverseButtons: true
+    }).then((result) => {
       if (result.isConfirmed) {
         this.cleanupForm();
       }
@@ -558,7 +989,7 @@ export class AddAchievementComponent implements OnInit {
   resetForm() {
     this.form.reset();
     if (this.descriptionEditor) {
-      this.descriptionEditor.nativeElement.innerText = '';
+      this.descriptionEditor.nativeElement.innerHTML = '';
     }
     this.attachments = [];
     this.existingAttachments = [];
@@ -571,13 +1002,19 @@ export class AddAchievementComponent implements OnInit {
     this.pdfFilename = null;
     this.pdfGenerating = false;
     this.pdfLoading = false;
+
+    // إعادة تعيين الجداول
+    this.tablesArray = [];
+    this.tablesFormArray.clear();
+    this.showTableModal = false;
+    this.editingTableIndex = null;
   }
 
   ngOnDestroy(): void {
     localStorage.removeItem('lastPdfFilename');
   }
 
-  // ==================== وظائف المرفقات ====================
+  // ==================== وظائف مساعدة للمرفقات ====================
 
   getFileName(attachmentUrl: string): string {
     if (!attachmentUrl) return 'ملف';
@@ -632,18 +1069,66 @@ export class AddAchievementComponent implements OnInit {
     window.open(fullUrl, '_blank');
   }
 
-  // ==================== رسائل SweetAlert ====================
+  // ==================== وظائف المرفقات ====================
 
-  private showLoading(title: string, text: string): void {
+  onFilesSelected(ev: Event) {
+    const input = ev.target as HTMLInputElement;
+    if (!input.files) return;
+
+    const files = Array.from(input.files);
+    const totalFiles =
+      this.attachments.length + files.length + this.existingAttachments.length;
+
+    if (totalFiles > this.maxFiles) {
+      this.showWarning(`الحد الأقصى ${this.maxFiles} ملفات فقط.`);
+      return;
+    }
+
+    for (const f of files) {
+      const sizeMB = f.size / (1024 * 1024);
+      const ext = f.name.split('.').pop()?.toLowerCase() || '';
+      const allowedImage = ['png', 'jpg', 'jpeg', 'webp', 'gif', 'bmp'];
+
+      if (!(ext === 'pdf' || allowedImage.includes(ext))) {
+        this.showError('نوع ملف غير مدعوم. يُسمح فقط بالصور أو PDF.');
+        continue;
+      }
+      if (sizeMB > this.maxFileSizeMB) {
+        this.showError(`حجم الملف أكبر من ${this.maxFileSizeMB}MB.`);
+        continue;
+      }
+      this.attachments.push(f);
+    }
+
+    input.value = '';
+  }
+
+  removeAttachment(index: number) {
+    this.attachments.splice(index, 1);
+    this.showSuccess('تم حذف الملف بنجاح.');
+  }
+
+  removeExistingAttachment(index: number) {
+    const attachmentToRemove = this.existingAttachments[index];
+
     Swal.fire({
-      title,
-      text,
-      icon: 'info',
-      showConfirmButton: false,
-      allowOutsideClick: false,
-      didOpen: () => Swal.showLoading(),
+      title: 'تأكيد الحذف',
+      text: 'هل تريد حذف هذا المرفق؟',
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonText: 'نعم',
+      cancelButtonText: 'إلغاء',
+      reverseButtons: true
+    }).then((result) => {
+      if (result.isConfirmed) {
+        this.deletedAttachments.push(attachmentToRemove);
+        this.existingAttachments.splice(index, 1);
+        this.showSuccess('تم حذف الملف بنجاح.');
+      }
     });
   }
+
+  // ==================== رسائل SweetAlert ====================
 
   private showSuccess(message: string): Promise<any> {
     return Swal.fire({
@@ -669,17 +1154,6 @@ export class AddAchievementComponent implements OnInit {
       text,
       icon: 'warning',
       confirmButtonText: 'حسناً',
-    });
-  }
-
-  private showConfirm(title: string, text: string, icon: any): Promise<any> {
-    return Swal.fire({
-      title,
-      text,
-      icon,
-      showCancelButton: true,
-      confirmButtonText: 'نعم',
-      cancelButtonText: 'إلغاء',
     });
   }
 }
