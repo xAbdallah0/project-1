@@ -104,6 +104,53 @@
                                 </div>
                             </div>
 
+                            <!-- قسم الجداول -->
+                            <div *ngIf="hasTables(activity)" class="tables-section mb-4">
+                                <div class="section-header mb-3">
+                                    <h6 class="text-dark fw-bold mb-0">
+                                        <i class="fa-solid fa-table text-primary me-2"></i>
+                                        الجداول المضافة
+                                        <span class="badge bg-primary ms-2 fs-7">{{ getTablesCount(activity) }}</span>
+                                    </h6>
+                                </div>
+                                <div class="row g-3">
+                                    <div class="col-12" *ngFor="let table of getTables(activity); let tableIndex = index">
+                                        <div class="table-card border rounded-2 p-3 mb-3">
+                                            <div class="d-flex justify-content-between align-items-center mb-3">
+                                                <h6 class="text-dark fw-bold mb-0">
+                                                    <i class="fa-solid fa-table me-2"></i>
+                                                    {{ table.title || 'جدول ' + (tableIndex + 1) }}
+                                                    <small class="text-muted ms-2 fs-7">
+                                                        ({{ table.rows }} × {{ table.cols }})
+                                                    </small>
+                                                </h6>
+                                                <button class="btn btn-outline-primary btn-sm"
+                                                    (click)="viewTableFullscreen(table)"
+                                                    title="عرض الجدول بالكامل">
+                                                    <i class="fa-solid fa-expand"></i>
+                                                </button>
+                                            </div>
+
+                                            <div class="table-responsive" style="max-height: 300px; overflow-y: auto;">
+                                                <table class="table table-bordered table-sm mb-0">
+                                                    <tbody>
+                                                        <tr *ngFor="let row of table.data; let rowIndex = index">
+                                                            <td *ngFor="let cell of row; let colIndex = index"
+                                                                class="p-2 border text-end"
+                                                                [title]="'خلية ' + (rowIndex+1) + '-' + (colIndex+1)"
+                                                                style="min-width: 120px;">
+                                                                {{ cell || '&nbsp;' }}
+                                                            </td>
+                                                        </tr>
+                                                    </tbody>
+                                                </table>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- قسم المرفقات -->
                             <div class="attachments-section"
                                 *ngIf="activity.Attachments && activity.Attachments.length > 0">
                                 <div class="section-header mb-3">
@@ -156,10 +203,11 @@
                                 </div>
                             </div>
 
-                            <div *ngIf="!activity.Attachments || activity.Attachments.length === 0"
+                            <!-- رسالة عدم وجود مرفقات أو جداول -->
+                            <div *ngIf="!hasAttachmentsOrTables(activity)"
                                 class="text-center py-4 border rounded-2 bg-light">
                                 <i class="fa-solid fa-file-circle-exclamation text-muted fa-2x mb-2"></i>
-                                <p class="text-muted mb-0">لا توجد مرفقات مضافة</p>
+                                <p class="text-muted mb-0">لا توجد مرفقات أو جداول مضافة</p>
                             </div>
                         </div>
 
@@ -197,6 +245,42 @@
     </div>
 </div>
 
+<!-- Modal لعرض الجداول -->
+<div *ngIf="showTableModal" class="modal-backdrop fade show" (click)="closeTableModal()"></div>
+<div *ngIf="showTableModal" class="modal fade show d-block" tabindex="-1">
+    <div class="modal-dialog modal-xl modal-dialog-centered">
+        <div class="modal-content rounded-3 border-0 shadow-lg">
+            <div class="modal-header bg-gradient-primary text-white rounded-top-3">
+                <h5 class="modal-title fw-bold">
+                    <i class="fa-solid fa-table me-2"></i>{{ selectedTable?.title || 'عرض الجدول' }}
+                    <small class="text-white-50 ms-2">({{ selectedTable?.rows }} × {{ selectedTable?.cols }})</small>
+                </h5>
+                <button type="button" class="btn-close btn-close-white" (click)="closeTableModal()"
+                    aria-label="Close"></button>
+            </div>
+            <div class="modal-body p-0">
+                <div class="table-responsive" style="max-height: 70vh; overflow: auto;">
+                    <table class="table table-bordered mb-0">
+                        <tbody>
+                            <tr *ngFor="let row of selectedTable?.data">
+                                <td *ngFor="let cell of row" class="p-3 border text-end" style="min-width: 150px;">
+                                    {{ cell || '&nbsp;' }}
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" (click)="closeTableModal()">
+                    <i class="fa-solid fa-times me-1"></i>إغلاق
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal لعرض الصور -->
 <div *ngIf="showImageModal" class="modal-backdrop fade show" (click)="closeImageModal()"></div>
 <div *ngIf="showImageModal" class="modal fade show d-block" tabindex="-1">
     <div class="modal-dialog modal-xl modal-dialog-centered">

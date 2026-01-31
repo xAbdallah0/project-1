@@ -10,57 +10,51 @@
         <h2 class="mb-1">{{ isEditing ? 'تعديل المسودة' : 'إضافة إنجاز جديد' }}</h2>
         <p class="text-muted mb-4">{{ isEditing ? 'قم بتعديل بيانات المسودة' : 'قم بتعبئة جميع الحقول المطلوبة لتسجيل الإنجاز' }}</p>
 
-        <!-- قسم PDF Testing -->
-        <!-- قسم PDF Testing - يظهر دائماً -->
-<div class="card shadow-sm mb-4 p-3 bg-light rounded-4">
-  <div class="row align-items-center">
-    <div class="col-md-8">
-      <h5 class="mb-2">
-        <i class="fa fa-file-pdf me-2 text-danger"></i>
-        معاينة PDF قبل الحفظ النهائي
-      </h5>
-      <p class="text-muted small mb-0">
-        يمكنك إنشاء ومعاينة PDF للإنجاز بعد ملء البيانات الأساسية (العنوان، المعيار الرئيسي، والمعيار الفرعي).
-      </p>
-    </div>
-    <div class="col-md-4 text-end">
-      <div class="btn-group" role="group">
-        <!-- زر إنشاء/تحديث PDF -->
-        <button class="btn btn-primary" (click)="generateTestingPdf()"
-                [disabled]="pdfGenerating || form.invalid">
-          <i class="fa me-2" [class.fa-file-pdf]="!pdfGenerating"
-             [class.fa-spinner]="pdfGenerating" [class.fa-spin]="pdfGenerating"></i>
-          {{ pdfGenerating ? 'جاري الإنشاء...' : (pdfFilename ? 'تحديث PDF' : 'إنشاء PDF') }}
-        </button>
-
-        <!-- زر عرض PDF -->
-        <button class="btn btn-success" (click)="openPdfTesting()"
-                [disabled]="!pdfFilename || pdfLoading || pdfGenerating">
-          <i class="fa me-2" [class.fa-eye]="!pdfLoading"
-             [class.fa-spinner]="pdfLoading" [class.fa-spin]="pdfLoading"></i>
-          {{ pdfLoading ? 'جاري التحميل...' : 'عرض PDF' }}
-        </button>
-
-        <!-- زر تنزيل PDF -->
-        <button class="btn btn-outline-primary" (click)="downloadPdf()"
-                [disabled]="!pdfFilename || pdfLoading">
-          <i class="fa fa-download me-2"></i>
-          تنزيل PDF
-        </button>
-      </div>
-    </div>
-  </div>
-</div>
-
         <form [formGroup]="form" (ngSubmit)="submitForReview()">
           <div class="card p-3 p-md-4 mb-3 shadow-sm border-0">
-            <h5 class="mb-3 fw-bold text-primary">معلومات الإنجاز</h5>
+            <h5 class="mb-4 fw-bold text-primary d-flex justify-content-between align-items-center">
+              <span>معلومات الإنجاز</span>
+
+              <!-- مجموعة أزرار PDF -->
+              <div class="d-flex gap-2">
+                <!-- زر إنشاء/تحديث PDF -->
+                <button class="btn btn-primary px-2 py-2 d-flex align-items-center"
+                        (click)="generateTestingPdf()"
+                        [disabled]="pdfGenerating || form.invalid">
+                  <i class="fa me-2"
+                     [class.fa-file-pdf]="!pdfGenerating"
+                     [class.fa-spinner]="pdfGenerating"
+                     [class.fa-spin]="pdfGenerating"></i>
+                  <span class="me-1">{{ pdfGenerating ? 'جاري الإنشاء...' : (pdfFilename ? 'تحديث PDF' : 'إنشاء PDF') }}</span>
+                </button>
+
+                <!-- زر عرض PDF -->
+                <button class="btn btn-success px-1 py-2 d-flex align-items-center"
+                        (click)="openPdfTesting()"
+                        [disabled]="!pdfFilename || pdfLoading || pdfGenerating">
+                  <i class="fa me-2"
+                     [class.fa-eye]="!pdfLoading"
+                     [class.fa-spinner]="pdfLoading"
+                     [class.fa-spin]="pdfLoading"></i>
+                  <span class="me-1">{{ pdfLoading ? 'جاري التحميل...' : 'عرض PDF' }}</span>
+                </button>
+
+                <!-- زر تنزيل PDF -->
+                <button class="btn btn-outline-primary px-1 py-2 d-flex align-items-center"
+                        (click)="downloadPdf()"
+                        [disabled]="!pdfFilename || pdfLoading">
+                  <i class="fa fa-download me-2"></i>
+                  <span class="me-1">تنزيل PDF</span>
+                </button>
+              </div>
+            </h5>
 
             <div class="mb-3">
               <label class="form-label fw-semibold">المعيار الرئيسي <span class="text-danger">*</span></label>
-              <select class="form-select" formControlName="MainCriteria"
+              <select class="form-select text-end" formControlName="MainCriteria"
                 [ngClass]="{'is-invalid': form.get('MainCriteria')?.invalid && form.get('MainCriteria')?.touched}"
-                (change)="onMainCriterionChange($event)">
+                (change)="onMainCriterionChange($event)"
+                style="direction: rtl; background-position: left 0.75rem center;">
                 <option value="">-- اختر المعيار الرئيسي --</option>
                 <option *ngFor="let item of mainCriteria" [value]="item._id">{{ item.name }}</option>
               </select>
@@ -71,8 +65,9 @@
 
             <div class="mb-3" *ngIf="subCriteria.length > 0">
               <label class="form-label fw-semibold">المعيار الفرعي <span class="text-danger">*</span></label>
-              <select class="form-select" formControlName="SubCriteria"
-                [ngClass]="{'is-invalid': form.get('SubCriteria')?.invalid && form.get('SubCriteria')?.touched}">
+              <select class="form-select text-end" formControlName="SubCriteria"
+                [ngClass]="{'is-invalid': form.get('SubCriteria')?.invalid && form.get('SubCriteria')?.touched}"
+                style="direction: rtl; background-position: left 0.75rem center;">
                 <option value="">اختر المعيار الفرعي</option>
                 <option *ngFor="let sub of subCriteria" [value]="sub._id">{{ sub.name }}</option>
               </select>
@@ -96,98 +91,210 @@
               </div>
             </div>
 
+            <!-- زر إضافة جدول جديد -->
+            <button type="button" class="btn btn-sm btn-primary" (click)="openTableModal()">
+              <i class="fa fa-table me-1"></i>
+              إضافة جدول جديد
+            </button><br>
+
+            <!-- قسم الجداول المضافة -->
+            <div class="mb-4" *ngIf="tablesArray.length > 0">
+              <h6 class="text-primary mb-3">
+                <i class="fa fa-table me-2"></i>
+                الجداول المضافة
+              </h6>
+
+              <div class="row">
+                <div class="col-12" *ngFor="let table of tablesArray; let i = index">
+                  <div class="card mb-3 border">
+                    <div class="card-header d-flex justify-content-between align-items-center bg-light">
+                      <h6 class="mb-0">
+                        جدول {{ i + 1 }}
+                        <span class="badge bg-info ms-2">{{ table.rows }} × {{ table.cols }}</span>
+                      </h6>
+                      <div class="btn-group btn-group-sm" role="group">
+                        <button type="button" class="btn btn-outline-primary"
+                                (click)="viewTable(i)" title="عرض الجدول">
+                          <i class="fa fa-eye"></i>
+                        </button>
+                        <button type="button" class="btn btn-outline-warning"
+                                (click)="editTable(i)" title="تعديل الجدول">
+                          <i class="fa fa-edit"></i>
+                        </button>
+                        <button type="button" class="btn btn-outline-danger"
+                                (click)="removeTable(i)" title="حذف الجدول">
+                          <i class="fa fa-trash"></i>
+                        </button>
+                      </div>
+                    </div>
+                    <div class="card-body p-0">
+                      <!-- عرض الجدول -->
+                      <div class="table-container" *ngIf="table.data && table.data.length > 0">
+                        <div class="table-responsive">
+                          <table class="table table-bordered mb-0">
+                            <tbody>
+                              <tr *ngFor="let row of table.data; let rowIndex = index">
+                                <td *ngFor="let cell of row; let colIndex = index"
+                                    class="p-2 border" style="min-width: 120px;">
+                                  {{ cell || '&nbsp;' }}
+                                </td>
+                              </tr>
+                            </tbody>
+                          </table>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
             <!-- Modal للجدول -->
-<div class="modal fade" [class.show]="showTableModal" [style.display]="showTableModal ? 'block' : 'none'"
-     tabindex="-1" role="dialog" *ngIf="showTableModal">
-  <div class="modal-backdrop fade show" (click)="closeTableModal()"></div>
-  <div class="modal-dialog modal-xl modal-dialog-centered" role="document" style="z-index: 1050;">
-    <div class="modal-content" dir="rtl">
-      <div class="modal-header bg-primary text-white">
-        <h5 class="modal-title">
-          <i class="fa fa-table me-2"></i>
-          {{ editingTableIndex !== null ? 'تعديل الجدول' : 'إنشاء جدول جديد' }}
-        </h5>
-      </div>
+            <div class="modal fade" [class.show]="showTableModal" [style.display]="showTableModal ? 'block' : 'none'"
+                 tabindex="-1" role="dialog" *ngIf="showTableModal">
+              <div class="modal-backdrop fade show" (click)="closeTableModal()"></div>
+              <div class="modal-dialog modal-xl modal-dialog-centered" role="document" style="z-index: 1050;">
+                <div class="modal-content" dir="rtl">
+                  <div class="modal-header bg-primary text-white">
+                    <h5 class="modal-title">
+                      <i class="fa fa-table me-2"></i>
+                      {{ editingTableIndex !== null ? 'تعديل الجدول' : 'إنشاء جدول جديد' }}
+                    </h5>
+                  </div>
 
-      <div class="modal-body">
-        <!-- إعدادات حجم الجدول -->
-        <div class="row mb-4">
-          <div class="col-md-6">
-            <label class="form-label fw-bold">
-              <i class="fa fa-arrows-up-down me-1"></i>
-              عدد الصفوف:
-            </label>
-            <input type="number" class="form-control" [(ngModel)]="tableRows"
-                   min="1" max="20" (change)="changeTableSize()">
-          </div>
-          <div class="col-md-6">
-            <label class="form-label fw-bold">
-              <i class="fa fa-arrows-left-right me-1"></i>
-              عدد الأعمدة:
-            </label>
-            <input type="number" class="form-control" [(ngModel)]="tableCols"
-                   min="1" max="10" (change)="changeTableSize()">
-          </div>
-        </div>
+                  <div class="modal-body">
+                    <!-- إعدادات حجم الجدول -->
+                    <div class="row mb-4">
+                      <div class="col-md-6">
+                        <label class="form-label fw-bold">
+                          <i class="fa fa-arrows-up-down me-1"></i>
+                          عدد الصفوف:
+                        </label>
+                        <input type="number"
+                               class="form-control"
+                               [(ngModel)]="tableRows"
+                               [ngModelOptions]="{standalone: true}"
+                               min="1" max="20"
+                               (change)="changeTableSize()">
+                      </div>
+                      <div class="col-md-6">
+                        <label class="form-label fw-bold">
+                          <i class="fa fa-arrows-left-right me-1"></i>
+                          عدد الأعمدة:
+                        </label>
+                        <input type="number"
+                               class="form-control"
+                               [(ngModel)]="tableCols"
+                               [ngModelOptions]="{standalone: true}"
+                               min="1" max="10"
+                               (change)="changeTableSize()">
+                      </div>
+                    </div>
 
-        <!-- الجدول القابل للتحرير -->
-        <div class="table-responsive" style="max-height: 400px; overflow-y: auto;">
-          <table class="table table-bordered table-hover editable-table">
-            <tbody>
-              <tr *ngFor="let row of currentTableData; let i = index; trackBy: trackByRow">
-                <td *ngFor="let cell of row; let j = index; trackBy: trackByCell" style="min-width: 120px;">
-                  <input
-                    type="text"
-                    class="form-control form-control-sm editable-cell"
-                    [id]="'cell-' + i + '-' + j"
-                    [value]="currentTableData[i][j]"
-                    (input)="updateCellValue(i, j, $event)"
-                    (focus)="trackFocus(i, j)"
-                    (blur)="trackFocus(i, j)"
-                    [placeholder]="'خلية ' + (i+1) + '-' + (j+1)"
-                    style="text-align: right; direction: rtl;">
-                </td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
+                    <!-- الجدول القابل للتحرير -->
+                    <div class="table-responsive" style="max-height: 400px; overflow-y: auto;">
+                      <table class="table table-bordered table-hover editable-table">
+                        <tbody>
+                          <tr *ngFor="let row of currentTableData; let i = index; trackBy: trackByRow">
+                            <td *ngFor="let cell of row; let j = index; trackBy: trackByCell" style="min-width: 120px;">
+                              <input
+                                type="text"
+                                class="form-control form-control-sm editable-cell"
+                                [id]="'cell-' + i + '-' + j"
+                                [value]="currentTableData[i][j]"
+                                (input)="updateCellValue(i, j, $event)"
+                                (focus)="trackFocus(i, j)"
+                                (blur)="trackFocus(i, j)"
+                                [placeholder]="'خلية ' + (i+1) + '-' + (j+1)"
+                                style="text-align: right; direction: rtl;">
+                            </td>
+                          </tr>
+                        </tbody>
+                      </table>
+                    </div>
 
-        <div class="alert alert-info mt-3">
-          <i class="fa fa-info-circle me-2"></i>
-          <strong>ملاحظة:</strong> سيتم إضافة الجدول إلى وصف الإنجاز. يمكنك تعديل محتوى كل خلية.
-        </div>
-      </div>
+                    <div class="alert alert-info mt-3">
+                      <i class="fa fa-info-circle me-2"></i>
+                      <strong>ملاحظة:</strong> سيتم إضافة الجدول ضمن وصف الإنجاز
+                    </div>
+                  </div>
 
-      <div class="modal-footer">
-        <button type="button" class="btn btn-secondary" (click)="closeTableModal()">
-          <i class="fa fa-x-lg me-2"></i>
-          إلغاء
-        </button>
-        <button type="button" class="btn btn-success" (click)="saveTable()">
-          <i class="fa fa-check-lg me-2"></i>
-          {{ editingTableIndex !== null ? 'تحديث الجدول' : 'إضافة الجدول' }}
-        </button>
-      </div>
-    </div>
-  </div>
-</div>
+                  <div class="modal-footer d-flex justify-content-between">
+                    <!-- أزرار إضافية على اليسار -->
 
+                    <!-- أزرار الإلغاء والحفظ على اليمين -->
+                    <div>
+                      <button type="button" class="btn btn-secondary" (click)="closeTableModal()">
+                        <i class="fa fa-times me-2"></i>
+                        إلغاء
+                      </button>
+                      <button type="button" class="btn btn-success ms-2" (click)="saveTable()">
+                        <i class="fa fa-check me-2"></i>
+                        {{ editingTableIndex !== null ? 'تحديث الجدول' : 'إضافة الجدول' }}
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- قسم وصف الإنجاز -->
             <div class="mb-3">
               <label class="form-label fw-semibold">وصف الإنجاز <span class="text-danger">*</span></label>
 
-              <div #descriptionEditor class="editor border rounded p-2 p-sm-3" contenteditable="true"
-                (input)="syncDescriptionToForm()"></div>
-              <div class="text-end text-muted small">
-                {{ getDescriptionLength() }}/1000
+              <!-- أزرار التنسيق -->
+              <div class="editor-toolbar mb-2 d-flex flex-wrap gap-1">
+                <button type="button" class="btn btn-sm btn-outline-secondary" (click)="exec('bold')" title="عريض">
+                  <i class="fa fa-bold"></i>
+                </button>
+                <button type="button" class="btn btn-sm btn-outline-secondary" (click)="exec('italic')" title="مائل">
+                  <i class="fa fa-italic"></i>
+                </button>
+                <button type="button" class="btn btn-sm btn-outline-secondary" (click)="exec('underline')" title="تحته خط">
+                  <i class="fa fa-underline"></i>
+                </button>
+                <button type="button" class="btn btn-sm btn-outline-secondary" (click)="exec('insertOrderedList')" title="قائمة مرقمة">
+                  <i class="fa fa-list-ol"></i>
+                </button>
+                <button type="button" class="btn btn-sm btn-outline-secondary" (click)="exec('insertUnorderedList')" title="قائمة نقطية">
+                  <i class="fa fa-list-ul"></i>
+                </button>
+                <button type="button" class="btn btn-sm btn-outline-secondary" (click)="exec('justifyRight')" title="محاذاة لليمين">
+                  <i class="fa fa-align-right"></i>
+                </button>
+                <button type="button" class="btn btn-sm btn-outline-secondary" (click)="exec('justifyCenter')" title="محاذاة للوسط">
+                  <i class="fa fa-align-center"></i>
+                </button>
+
               </div>
-              <div class="text-danger mt-1" *ngIf="form.get('activityDescription')?.errors?.['required']">
-                الوصف مطلوب.
+
+              <!-- منطقة المحرر -->
+              <div #descriptionEditor class="editor border rounded p-3" contenteditable="true"
+                style="min-height: 150px; max-height: 250px; overflow-y: auto;"
+                (input)="syncDescriptionToForm()"
+                (blur)="syncDescriptionToForm()">
               </div>
-              <div class="text-danger mt-1" *ngIf="form.get('activityDescription')?.errors?.['minlength']">
-                يجب أن يكون الوصف على الأقل 10 أحرف.
+
+              <div class="d-flex justify-content-between mt-2">
+                <div class="text-muted small">
+                  أدخل النص واستخدم أزرار التنسيق
+                </div>
+                <div class="text-end text-muted small">
+                  {{ getDescriptionLength() }}/1000 حرف
+                </div>
               </div>
-              <div class="text-danger mt-1" *ngIf="form.get('activityDescription')?.errors?.['maxlength']">
-                الحد الأقصى للوصف 1000 حرف.
+
+              <!-- رسائل الخطأ -->
+              <div class="text-danger mt-1" *ngIf="form.get('activityDescription')?.invalid && form.get('activityDescription')?.touched">
+                <span *ngIf="form.get('activityDescription')?.errors?.['required']">
+                  الوصف مطلوب.
+                </span>
+                <span *ngIf="form.get('activityDescription')?.errors?.['minlength']">
+                  يجب أن يكون الوصف على الأقل 10 أحرف.
+                </span>
+                <span *ngIf="form.get('activityDescription')?.errors?.['maxlength']">
+                  الحد الأقصى للوصف 1000 حرف.
+                </span>
               </div>
             </div>
 

@@ -1,6 +1,6 @@
 import { Component, OnInit } from '@angular/core';
 import { ActivityService } from 'src/app/service/achievements-service.service';
-import { Activity } from 'src/app/model/achievement';
+import { Activity, TableData } from 'src/app/model/achievement'; // استيراد TableData أيضاً
 import { Router } from '@angular/router';
 import Swal from 'sweetalert2';
 
@@ -14,6 +14,8 @@ export class DraftsComponent implements OnInit {
   loading = true;
   selectedImage: string = '';
   showImageModal = false;
+  showTableModal = false;
+  selectedTable: TableData | null = null;
 
   constructor(
     private activityService: ActivityService,
@@ -42,20 +44,113 @@ export class DraftsComponent implements OnInit {
     }
   }
 
+  // ==== وظائف الجداول ====
+  hasTables(activity: Activity): boolean {
+    if (!activity) return false;
+
+    // التحقق من وجود tables في النشاط
+    const tables = activity.tables;
+    if (tables === undefined || tables === null) return false;
+
+    // إذا كان string (JSON)، تحقق أنه غير فارغ
+    if (typeof tables === 'string') {
+      return tables.trim() !== '' && tables.trim() !== '[]';
+    }
+
+    // إذا كان array، تحقق أن يحتوي على عناصر
+    if (Array.isArray(tables)) {
+      return tables.length > 0;
+    }
+
+    return false;
+  }
+
+  getTables(activity: Activity): TableData[] {
+    if (!activity.tables) return [];
+
+    let tables = activity.tables;
+
+    // إذا كان tables هو سلسلة JSON، نحوله إلى مصفوفة
+    if (typeof tables === 'string') {
+      try {
+        const parsed = JSON.parse(tables);
+        // تأكد من أن الناتج مصفوفة
+        tables = Array.isArray(parsed) ? parsed : [];
+      } catch (e) {
+        console.error('Error parsing tables JSON:', e);
+        return [];
+      }
+    }
+
+    // التأكد من أن tables هي مصفوفة
+    if (Array.isArray(tables)) {
+      return tables.map((table: any, index: number) => {
+        return {
+          title: table.title || `جدول ${index + 1}`,
+          rows: table.rows || 1,
+          cols: table.cols || 2,
+          data: Array.isArray(table.data) ? table.data : [],
+          html: table.html || ''
+        };
+      });
+    }
+
+    return [];
+  }
+
+  getTablesCount(activity: Activity): number {
+    return this.getTables(activity).length;
+  }
+
+  viewTableFullscreen(table: TableData): void {
+    this.selectedTable = table;
+    this.showTableModal = true;
+  }
+
+  closeTableModal(): void {
+    this.showTableModal = false;
+    this.selectedTable = null;
+  }
+
+  // ==== وظائف المرفقات ====
+  hasAttachmentsOrTables(activity: Activity): boolean {
+    const hasAttachments = activity.Attachments &&
+                          Array.isArray(activity.Attachments) &&
+                          activity.Attachments.length > 0;
+    const hasTables = this.hasTables(activity);
+
+    return hasAttachments || hasTables;
+  }
+
+  // ==== وظائف المساعدة ====
   getCleanDescription(description: string): string {
     if (!description) return 'لا يوجد وصف';
 
+    // إذا كان الوصف يحتوي على HTML
     if (description.includes('<') && description.includes('>')) {
       return this.stripHtmlTags(description);
     }
 
-    return description;
+    // إذا كان الوصف يحتوي على جداول كمعلومات JSON
+    if (description.includes('[{') && description.includes('rows') && description.includes('cols')) {
+      return 'هذا الوصف يحتوي على جداول متضمنة. يمكن عرضها في قسم الجداول.';
+    }
+
+    return description.length > 200 ? description.substring(0, 200) + '...' : description;
   }
 
   private stripHtmlTags(html: string): string {
+    if (!html) return '';
+
     const tempDiv = document.createElement('div');
     tempDiv.innerHTML = html;
-    return tempDiv.textContent || tempDiv.innerText || '';
+
+    // إزالة الجداول من النص
+    const tables = tempDiv.querySelectorAll('table');
+    tables.forEach(table => table.remove());
+
+    const text = tempDiv.textContent || tempDiv.innerText || '';
+    return text.length > 200 ? text.substring(0, 200) + '...' : text;
   }
 
   getMainCriteriaName(activity: Activity): string {
@@ -73,31 +168,36 @@ export class DraftsComponent implements OnInit {
   getStatusBadgeClass(status: string): string {
     const statusClasses: { [key: string]: string } = {
       'قيد المراجعة': 'bg-warning',
-      معتمد: 'bg-success',
-      مرفوض: 'bg-danger',
-      مسودة: 'bg-secondary',
+      'معتمد': 'bg-success',
+      'مرفوض': 'bg-danger',
+      'مسودة': 'bg-secondary',
+      'مكتمل': 'bg-info'
     };
     return statusClasses[status] || 'bg-secondary';
   }
 
   isImage(attachment: string): boolean {
+    if (!attachment) return false;
+
     const imageExtensions = ['.jpg', '.jpeg', '.png', '.gif', '.webp', '.bmp'];
-    return imageExtensions.some(
-      (ext) =>
-        attachment.toLowerCase().endsWith(ext) ||
-        attachment.toLowerCase().includes(ext)
-    );
+    const lowerAttachment = attachment.toLowerCase();
+    return imageExtensions.some(ext => lowerAttachment.includes(ext));
   }
 
   isPdf(attachment: string): boolean {
+    if (!attachment) return false;
     return attachment.toLowerCase().includes('.pdf');
   }
 
   getFullAttachmentUrl(attachment: string): string {
+    if (!attachment) return '';
+
     if (attachment.startsWith('http')) {
       return attachment;
-    } else {
+    } else if (attachment.startsWith('/')) {
       return `http://localhost:3000${attachment}`;
+    } else {
+      return `http://localhost:3000/uploads/${attachment}`;
     }
   }
 
@@ -153,14 +253,17 @@ export class DraftsComponent implements OnInit {
 
     this.activityService.getDrafts().subscribe({
       next: (response) => {
-        console.log('Drafts response:', response);
-
         if (response.success) {
           this.draftActivities = response.data || [];
-          console.log(
-            'Loaded activities with attachments:',
-            this.draftActivities
-          );
+
+          // تحليل الجداول في كل نشاط
+          this.draftActivities.forEach(activity => {
+            if (activity.tables) {
+              console.log('Tables found for activity:', activity.activityTitle, activity.tables);
+            }
+          });
+
+          console.log('Loaded draft activities:', this.draftActivities);
 
           if (this.draftActivities.length === 0) {
             Swal.fire({
@@ -212,8 +315,22 @@ export class DraftsComponent implements OnInit {
   }
 
   editDraft(activity: Activity): void {
-    console.log('Editing draft:', activity);
-    localStorage.setItem('editingDraft', JSON.stringify(activity));
+    console.log('Editing draft:', activity.activityTitle);
+
+    // نسخ الجداول بشكل آمن للتعديل
+    const draftToEdit = { ...activity };
+
+    // التأكد من أن tables هي مصفوفة عند التعديل
+    if (draftToEdit.tables && typeof draftToEdit.tables === 'string') {
+      try {
+        draftToEdit.tables = JSON.parse(draftToEdit.tables);
+      } catch (e) {
+        console.error('Error parsing tables for edit:', e);
+        draftToEdit.tables = [];
+      }
+    }
+
+    localStorage.setItem('editingDraft', JSON.stringify(draftToEdit));
 
     this.router.navigate(['/add-achievement'], {
       queryParams: {
