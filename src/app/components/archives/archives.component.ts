@@ -60,15 +60,15 @@ export class ArchivedActivitiesComponent implements OnInit {
 
     return (
       html
-        .replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '') 
-        .replace(/<style\b[^<]*(?:(?!<\/style>)<[^<]*)*<\/style>/gi, '') 
-        .replace(/<link[^>]*>/gi, '') 
-        .replace(/<meta[^>]*>/gi, '') 
-        .replace(/<div[^>]*>/g, '<div>') 
+        .replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '')
+        .replace(/<style\b[^<]*(?:(?!<\/style>)<[^<]*)*<\/style>/gi, '')
+        .replace(/<link[^>]*>/gi, '')
+        .replace(/<meta[^>]*>/gi, '')
+        .replace(/<div[^>]*>/g, '<div>')
         .replace(/<p[^>]*>/g, '<p>')
-        .replace(/<br\s*\/?>/gi, '<br>') 
-        .replace(/&nbsp;/g, ' ') 
-        .replace(/\n/g, '<br>') 
+        .replace(/<br\s*\/?>/gi, '<br>')
+        .replace(/&nbsp;/g, ' ')
+        .replace(/\n/g, '<br>')
         .trim()
     );
   }
@@ -268,4 +268,5 @@ export class ArchivedActivitiesComponent implements OnInit {
       showConfirmButton: false,
     });
   }
+  
 }

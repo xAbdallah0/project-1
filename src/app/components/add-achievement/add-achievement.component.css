@@ -68,49 +68,81 @@
   box-shadow: 0 0 0 0.15rem rgba(23, 48, 122, 0.25);
 }
 
-.toolbar {
-  background: #f1f5f9;
-  border: 1px solid #e2e8f0;
+/* Quill Editor Styles */
+.quill-editor-wrapper {
   border-radius: 8px;
-  padding: 0.4rem;
-  display: flex;
-  gap: 0.3rem;
-  flex-wrap: wrap;
+  overflow: hidden;
+  border: 1px solid #d1d5db;
+  transition: border 0.2s;
 }
 
-.toolbar .btn {
-  width: 32px;
-  height: 32px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: 6px;
-  transition: all 0.2s;
-  font-size: 0.8rem;
-}
-
-.toolbar .btn:hover {
-  background-color: #17307a;
-  color: #fff;
+.quill-editor-wrapper:focus-within {
   border-color: #17307a;
+  box-shadow: 0 0 0 0.15rem rgba(23, 48, 122, 0.25);
 }
 
-.editor {
-  width: 100%;
+.ql-toolbar.ql-snow {
+  border: none;
+  border-bottom: 1px solid #d1d5db;
+  background-color: #f8fafc;
+  padding: 8px;
+  direction: rtl;
+}
+
+.ql-container.ql-snow {
+  border: none;
+  font-family: 'Tajawal', sans-serif;
+  font-size: 16px;
   min-height: 150px;
-  background: #fff;
-  border-radius: 8px;
-  border: 1px solid #e5e7eb;
-  padding: 0.8rem;
-  font-size: 0.9rem;
-  line-height: 1.6;
-  overflow-y: auto;
+  direction: rtl;
+  text-align: right;
 }
 
-.editor:empty:before {
-  content: "أدخل وصف الإنجاز هنا...";
-  color: #9ca3af;
+.ql-editor {
+  min-height: 150px;
+  direction: rtl;
+  text-align: right;
+  font-family: 'Tajawal', sans-serif;
+  line-height: 1.6;
+  padding: 12px 15px;
 }
+
+.ql-editor.ql-blank::before {
+  color: #9ca3af;
+  font-style: normal;
+  right: 15px;
+  left: auto;
+  text-align: right;
+}
+
+.ql-snow .ql-formats {
+  margin-right: 15px;
+  margin-left: 0;
+}
+
+.ql-snow .ql-picker.ql-header,
+.ql-snow .ql-picker.ql-font,
+.ql-snow .ql-picker.ql-size,
+.ql-snow .ql-picker.ql-align {
+  direction: ltr;
+}
+
+/* تنسيقات الجداول في المحرر */
+.ql-editor table {
+  margin: 10px 0;
+  border-collapse: collapse;
+  width: 100%;
+  direction: rtl;
+}
+
+.ql-editor td,
+.ql-editor th {
+  border: 1px solid #ddd;
+  padding: 8px;
+  text-align: right;
+}
+
+/* نهاية تنسيقات Quill */
 
 .btn {
   border-radius: 8px;
@@ -232,6 +264,19 @@
 
 .custom-upload:hover i {
   transform: translateY(-2px);
+}
+
+.custom-upload.disabled {
+  background-color: #e9ecef;
+  border-color: #dee2e6;
+  color: #6c757d;
+  cursor: not-allowed;
+}
+
+.custom-upload.disabled:hover {
+  background-color: #e9ecef;
+  border-color: #dee2e6;
+  color: #6c757d;
 }
 
 .alert {
@@ -361,6 +406,40 @@
   margin-right: auto;
 }
 
+/* Modal styles */
+.modal-content {
+  border-radius: 12px;
+}
+
+.modal-header {
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.modal-body {
+  padding: 20px;
+}
+
+.modal-footer {
+  border-top: 1px solid #dee2e6;
+  padding: 15px 20px;
+}
+
+/* Table in modal */
+.editable-table {
+  background-color: white;
+}
+
+.editable-cell {
+  width: 100%;
+  min-height: 40px;
+}
+
+.editable-cell:focus {
+  border-color: #17307a;
+  box-shadow: 0 0 0 0.15rem rgba(23, 48, 122, 0.25);
+}
+
+/* Responsive Styles */
 @media (min-width: 576px) {
   .add-achievement-content {
     padding: 1.5rem;
@@ -386,28 +465,23 @@
     border-radius: 10px;
   }
 
-  .toolbar .btn {
-    width: 36px;
-    height: 36px;
-    font-size: 0.9rem;
+  .ql-container.ql-snow {
+    font-size: 16px;
   }
 
-  .editor {
+  .ql-editor {
     min-height: 180px;
-    padding: 1rem;
-    border-radius: 10px;
+    font-size: 16px;
   }
 
   .btn {
-    font-size: 18px;
-    padding: 16px 0;
-    border-radius: 10px;
+    font-size: 16px;
+    padding: 14px 0;
   }
 
   .custom-upload {
-    font-size: 18px;
-    height: 60px;
-    border-radius: 10px;
+    font-size: 16px;
+    height: 50px;
   }
 
   .attachment-item {
@@ -500,85 +574,39 @@
     max-width: 100%;
   }
 
-  .toolbar .btn {
-    width: 30px;
-    height: 30px;
-    font-size: 0.75rem;
+  .ql-container.ql-snow {
+    font-size: 14px;
   }
 
-  .editor {
+  .ql-editor {
     min-height: 120px;
-    padding: 0.7rem;
+    font-size: 14px;
+    padding: 10px;
+  }
+
+  .ql-toolbar.ql-snow {
+    padding: 6px;
+  }
+
+  .ql-snow .ql-formats {
+    margin-right: 8px;
+  }
+
+  .ql-snow .ql-toolbar button,
+  .ql-snow .ql-toolbar .ql-picker-label,
+  .ql-snow .ql-toolbar .ql-picker-item {
+    padding: 2px 4px;
   }
 
   .btn {
-    font-size: 16px;
-    padding: 14px 0;
+    font-size: 14px;
+    padding: 12px 0;
   }
 
   .custom-upload {
-    font-size: 16px;
-    height: 50px;
+    font-size: 14px;
+    height: 45px;
   }
 }
 
-
-/* تنسيقات الجداول وأدوات المحرر */
-.editor-toolbar {
-  background-color: #f8f9fa;
-  padding: 8px;
-  border-radius: 5px;
-  border: 1px solid #dee2e6;
-  margin-bottom: 10px;
-}
-
-.editor-toolbar .btn {
-  padding: 4px 8px;
-  font-size: 12px;
-}
-
-.editor {
-  min-height: 150px;
-  max-height: 400px;
-  overflow-y: auto;
-  background-color: white;
-  line-height: 1.6;
-  padding: 10px;
-}
-
-.editor:focus {
-  outline: 2px solid #0d6efd;
-  outline-offset: -1px;
-  border-color: #0d6efd;
-}
-
-/* تنسيقات الجداول المضافة */
-.achievement-table {
-  font-size: 14px;
-  background-color: white;
-}
-
-.table-container {
-  margin: 15px 0;
-  border: 1px solid #dee2e6;
-  border-radius: 5px;
-  overflow: hidden;
-}
-
-/* أزرار تعديل وحذف الجداول */
-.btn-group .btn {
-  padding: 4px 8px;
-  font-size: 12px;
-}
-
-.btn-warning {
-  background-color: #ffc107;
-  border-color: #ffc107;
-  color: #212529;
-}
-
-.btn-warning:hover {
-  background-color: #e0a800;
-  border-color: #d39e00;
-}
 

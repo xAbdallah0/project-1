@@ -239,64 +239,43 @@
             </div>
 
             <!-- قسم وصف الإنجاز -->
-            <div class="mb-3">
-              <label class="form-label fw-semibold">وصف الإنجاز <span class="text-danger">*</span></label>
+            <!-- قسم وصف الإنجاز -->
+<div class="mb-3">
+  <label class="form-label fw-semibold">وصف الإنجاز <span class="text-danger">*</span></label>
 
-              <!-- أزرار التنسيق -->
-              <div class="editor-toolbar mb-2 d-flex flex-wrap gap-1">
-                <button type="button" class="btn btn-sm btn-outline-secondary" (click)="exec('bold')" title="عريض">
-                  <i class="fa fa-bold"></i>
-                </button>
-                <button type="button" class="btn btn-sm btn-outline-secondary" (click)="exec('italic')" title="مائل">
-                  <i class="fa fa-italic"></i>
-                </button>
-                <button type="button" class="btn btn-sm btn-outline-secondary" (click)="exec('underline')" title="تحته خط">
-                  <i class="fa fa-underline"></i>
-                </button>
-                <button type="button" class="btn btn-sm btn-outline-secondary" (click)="exec('insertOrderedList')" title="قائمة مرقمة">
-                  <i class="fa fa-list-ol"></i>
-                </button>
-                <button type="button" class="btn btn-sm btn-outline-secondary" (click)="exec('insertUnorderedList')" title="قائمة نقطية">
-                  <i class="fa fa-list-ul"></i>
-                </button>
-                <button type="button" class="btn btn-sm btn-outline-secondary" (click)="exec('justifyRight')" title="محاذاة لليمين">
-                  <i class="fa fa-align-right"></i>
-                </button>
-                <button type="button" class="btn btn-sm btn-outline-secondary" (click)="exec('justifyCenter')" title="محاذاة للوسط">
-                  <i class="fa fa-align-center"></i>
-                </button>
+  <!-- محرر Quill -->
+  <quill-editor
+    #descriptionEditor
+    [modules]="quillModules"
+    [styles]="quillStyles"
+    formControlName="activityDescription"
+    placeholder="اكتب وصف الإنجاز هنا..."
+    (onContentChanged)="onContentChanged($event)"
+    (onEditorCreated)="onEditorCreated($event)"
+  ></quill-editor>
 
-              </div>
+  <div class="d-flex justify-content-between mt-2">
+    <div class="text-muted small">
+      أدخل النص واستخدم أدوات التنسيق
+    </div>
+    <div class="text-end text-muted small">
+      {{ getDescriptionLength() }}/1000 حرف
+    </div>
+  </div>
 
-              <!-- منطقة المحرر -->
-              <div #descriptionEditor class="editor border rounded p-3" contenteditable="true"
-                style="min-height: 150px; max-height: 250px; overflow-y: auto;"
-                (input)="syncDescriptionToForm()"
-                (blur)="syncDescriptionToForm()">
-              </div>
-
-              <div class="d-flex justify-content-between mt-2">
-                <div class="text-muted small">
-                  أدخل النص واستخدم أزرار التنسيق
-                </div>
-                <div class="text-end text-muted small">
-                  {{ getDescriptionLength() }}/1000 حرف
-                </div>
-              </div>
-
-              <!-- رسائل الخطأ -->
-              <div class="text-danger mt-1" *ngIf="form.get('activityDescription')?.invalid && form.get('activityDescription')?.touched">
-                <span *ngIf="form.get('activityDescription')?.errors?.['required']">
-                  الوصف مطلوب.
-                </span>
-                <span *ngIf="form.get('activityDescription')?.errors?.['minlength']">
-                  يجب أن يكون الوصف على الأقل 10 أحرف.
-                </span>
-                <span *ngIf="form.get('activityDescription')?.errors?.['maxlength']">
-                  الحد الأقصى للوصف 1000 حرف.
-                </span>
-              </div>
-            </div>
+  <!-- رسائل الخطأ -->
+  <div class="text-danger mt-1" *ngIf="form.get('activityDescription')?.invalid && form.get('activityDescription')?.touched">
+    <span *ngIf="form.get('activityDescription')?.errors?.['required']">
+      الوصف مطلوب.
+    </span>
+    <span *ngIf="form.get('activityDescription')?.errors?.['minlength']">
+      يجب أن يكون الوصف على الأقل 10 أحرف.
+    </span>
+    <span *ngIf="form.get('activityDescription')?.errors?.['maxlength']">
+      الحد الأقصى للوصف 1000 حرف.
+    </span>
+  </div>
+</div>
 
             <div class="mb-3">
               <label class="form-label fw-semibold" for="name">المسئول عن اضافه الانجاز (اختياري)</label>

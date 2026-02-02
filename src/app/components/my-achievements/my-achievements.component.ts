@@ -2,6 +2,21 @@ import { Component, OnInit } from '@angular/core';
 import { ActivityService } from '../../service/achievements-service.service';
 import { Activity } from 'src/app/model/achievement';
 import Swal from 'sweetalert2';
+import { Router } from '@angular/router';
+
+// تعريف نوع للمعايير
+interface Criteria {
+  _id?: string;
+  name?: string;
+}
+
+// تعريف نوع للمستخدم
+interface User {
+  _id?: string;
+  name?: string;
+  fullname?: string;
+  email?: string;
+}
 
 @Component({
   selector: 'app-my-achievements',
@@ -15,7 +30,10 @@ export class MyAchievementsComponent implements OnInit {
   selectedAchievement: Activity | null = null;
   rejectionReason = '';
   loading = true;
-
+  // PDF Variables
+  pdfFilename: string | null = null;
+  pdfGenerating = false;
+  pdfLoading = false;
   showDetailsModal = false;
   showRejectModal = false;
   showImageModal = false;
@@ -23,7 +41,10 @@ export class MyAchievementsComponent implements OnInit {
   isAdmin = false;
   currentUser: any = null;
 
-  constructor(private activityService: ActivityService) {}
+  constructor(
+    private activityService: ActivityService,
+    private router: Router
+  ) {}
 
   ngOnInit(): void {
     this.loadActivities();
@@ -329,13 +350,26 @@ export class MyAchievementsComponent implements OnInit {
 
   getNameField(field: any): string {
     if (!field) return 'غير محدد';
-    return typeof field === 'object' ? field.name || 'غير محدد' : field;
+
+    if (typeof field === 'object') {
+      return (field as Criteria).name || 'غير محدد';
+    }
+
+    return field;
+  }
+
+  getName(field: any): string {
+    if (!field) return '';
+    const name = typeof field === 'object' ? field.name : field;
+    return name?.trim() || '';
   }
 
   getUserName(user: any): string {
     if (!user) return 'غير محدد';
+
     if (typeof user === 'string') return user;
-    return user.name || 'غير محدد';
+
+    return (user as User).name || 'غير محدد';
   }
 
   isImage(attachment: string): boolean {
@@ -407,5 +441,253 @@ export class MyAchievementsComponent implements OnInit {
       مسودة: 'bg-gradient-secondary',
     };
     return headerClasses[status] || 'bg-gradient-primary';
+  }
+
+  // ==================== تعديل دالة التعديل ====================
+
+  // دالة التعديل - الانتقال إلى صفحة الإضافة مع البيانات
+  editAchievement(achievement: Activity): void {
+  if (!this.isAdmin) {
+    Swal.fire('خطأ', 'ليس لديك صلاحية لهذا الإجراء', 'error');
+    return;
+  }
+
+  // إظهار رسالة تحميل سريعة
+  Swal.fire({
+    title: 'جارٍ التوجيه...',
+    text: 'سيتم تحميل بيانات الإنجاز للتعديل',
+    icon: 'info',
+    timer: 800,
+    showConfirmButton: false
+  }).then(() => {
+    // الانتقال بعد إغلاق الرسالة
+    this.prepareAndNavigateToEdit(achievement);
+  });
+}
+
+  // دالة تحضير البيانات والانتقال
+  private prepareAndNavigateToEdit(achievement: Activity): void {
+    console.log('تحضير بيانات التعديل:', achievement);
+
+    // إغلاق المودال الحالي
+    this.closeDetailsModal();
+
+    // تحضير البيانات للتعديل
+    const editingData = {
+      _id: achievement._id,
+      activityTitle: achievement.activityTitle || '',
+      activityDescription: achievement.activityDescription || '',
+      MainCriteria: this.extractCriteriaId(achievement.MainCriteria),
+      SubCriteria: this.extractCriteriaId(achievement.SubCriteria),
+      name: achievement.name || '',
+      status: achievement.status || 'مسودة',
+      SaveStatus: achievement.SaveStatus || 'مسودة',
+      Attachments: achievement.Attachments || [],
+      user: this.extractUserId(achievement.user),
+      createdAt: achievement.createdAt,
+      updatedAt: achievement.updatedAt,
+      reasonForRejection: achievement.reasonForRejection || '',
+      // إضافة الجداول إذا كانت موجودة
+      tables: achievement.tables || []
+    };
+
+    console.log('بيانات التعديل المحضرة:', editingData);
+
+    // حفظ البيانات في localStorage للوصول إليها في صفحة الإضافة
+    localStorage.setItem('editingDraft', JSON.stringify(editingData));
+
+    // الانتقال إلى صفحة الإضافة مع معلمات التعديل
+    this.router.navigate(['/add-achievement'], {
+      queryParams: {
+        edit: 'true',
+        draftId: achievement._id
+      }
+    });
+  }
+
+  // دالة مساعدة لاستخراج ID من المعيار
+  private extractCriteriaId(criteria: any): string | undefined {
+    if (!criteria) return undefined;
+
+    if (typeof criteria === 'string') {
+      return criteria;
+    }
+
+    if (typeof criteria === 'object' && criteria._id) {
+      return criteria._id;
+    }
+
+    return undefined;
+  }
+
+  // دالة مساعدة لاستخراج ID من المستخدم
+  private extractUserId(user: any): string | undefined {
+    if (!user) return undefined;
+
+    if (typeof user === 'string') {
+      return user;
+    }
+
+    if (typeof user === 'object' && user._id) {
+      return user._id;
+    }
+
+    return undefined;
+  }
+
+  // دالة الحذف
+  deleteAchievement(id: string): void {
+    if (!this.isAdmin) {
+      Swal.fire('خطأ', 'ليس لديك صلاحية لهذا الإجراء', 'error');
+      return;
+    }
+
+    Swal.fire({
+      title: 'هل أنت متأكد؟',
+      text: 'سيتم حذف هذا الإنجاز نهائيًا ولن يمكن استرجاعه',
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonText: 'نعم، احذف',
+      cancelButtonText: 'إلغاء',
+      confirmButtonColor: '#dc3545',
+      cancelButtonColor: '#6c757d',
+      reverseButtons: true
+    }).then((result) => {
+      if (result.isConfirmed) {
+        this.activityService.delete(id).subscribe({
+          next: (res) => {
+            if (res.success) {
+              // إزالة الإنجاز من القائمة
+              this.achievements = this.achievements.filter(a => a._id !== id);
+
+              // إغلاق المودال إذا كان مفتوحًا لهذا الإنجاز
+              if (this.selectedAchievement && this.selectedAchievement._id === id) {
+                this.closeDetailsModal();
+              }
+
+              Swal.fire('تم الحذف', 'تم حذف الإنجاز بنجاح', 'success');
+            }
+          },
+          error: (err) => {
+            console.error('Error deleting achievement:', err);
+            Swal.fire('خطأ', 'تعذر حذف الإنجاز', 'error');
+          }
+        });
+      }
+    });
+  }
+
+  // دالة حذف من المودال (لإعادة استخدامها)
+  deleteFromModal(): void {
+    if (!this.selectedAchievement || !this.selectedAchievement._id) return;
+    this.deleteAchievement(this.selectedAchievement._id);
+  }
+
+
+  // ==================== PDF Methods ====================
+
+  generatePdf(): void {
+    if (!this.selectedAchievement) {
+      Swal.fire('خطأ', 'لا يوجد إنجاز محدد لإنشاء PDF', 'error');
+      return;
+    }
+
+    this.pdfGenerating = true;
+
+    const activityData = {
+      activityTitle: this.selectedAchievement.activityTitle || '',
+      activityDescription: this.selectedAchievement.activityDescription || '',
+      mainCriteriaName: this.getNameField(this.selectedAchievement.MainCriteria),
+      subCriteriaName: this.getNameField(this.selectedAchievement.SubCriteria),
+      userName: this.getFullName(this.selectedAchievement.user),
+      name: this.getName(this.selectedAchievement.user),
+      date: this.selectedAchievement.date || new Date().toISOString(),
+      Attachments: this.selectedAchievement.Attachments || [],
+      tables: this.selectedAchievement.tables || []
+    };
+
+    this.activityService.generateTestingPDF(activityData).subscribe({
+      next: (res) => {
+        this.pdfGenerating = false;
+        if (res.success && res.fileName) {
+          this.pdfFilename = this.processFilename(res.fileName, res.filePath);
+          Swal.fire('تم', 'تم إنشاء PDF بنجاح', 'success');
+        } else {
+          Swal.fire('خطأ', res.message || 'حدث خطأ في إنشاء PDF', 'error');
+        }
+      },
+      error: (err) => {
+        this.pdfGenerating = false;
+        Swal.fire('خطأ', 'فشل إنشاء الـ PDF: ' + err.message, 'error');
+      }
+    });
+  }
+
+  openPdf(): void {
+    if (!this.pdfFilename) {
+      Swal.fire('تحذير', 'لا يوجد ملف PDF متاح للعرض. يرجى إنشاء PDF أولاً', 'warning');
+      return;
+    }
+
+    this.pdfLoading = true;
+    const fullFilename = this.getFullFilename(this.pdfFilename);
+
+    this.activityService.viewPDF(fullFilename).subscribe({
+      next: (blob: Blob) => {
+        this.pdfLoading = false;
+        const url = URL.createObjectURL(blob);
+        window.open(url, '_blank');
+      },
+      error: (err: any) => {
+        this.pdfLoading = false;
+        const fileUrl = `http://localhost:3000/generated-files/${fullFilename}`;
+        window.open(fileUrl, '_blank');
+        Swal.fire({
+          title: 'تنبيه',
+          text: 'تم فتح الملف في نافذة جديدة. إذا لم يعمل، يرجى التحقق من المسار',
+          icon: 'info',
+          timer: 3000
+        });
+      }
+    });
+  }
+
+  downloadPdf(): void {
+    if (!this.pdfFilename) {
+      Swal.fire('تحذير', 'لا يوجد ملف PDF متاح للتنزيل', 'warning');
+      return;
+    }
+
+    const downloadName = this.generateDownloadName();
+    const fullFilename = this.getFullFilename(this.pdfFilename);
+
+    this.activityService.downloadPDF(fullFilename, downloadName);
+  }
+
+  private processFilename(fileName: string, filePath?: string): string {
+    let filename = fileName;
+    if (filePath) {
+      const pathParts = filePath.split('/');
+      filename = pathParts[pathParts.length - 1];
+      if (filePath.includes('/testing/')) {
+        filename = `testing/${filename}`;
+      }
+    }
+    return filename;
+  }
+
+  private getFullFilename(filename: string): string {
+    if (!filename.startsWith('testing/') && filename.startsWith('تقرير_انجاز_تجريبي')) {
+      return `testing/${filename}`;
+    }
+    return filename;
+  }
+
+  private generateDownloadName(): string {
+    const title = this.selectedAchievement?.activityTitle
+      ? this.selectedAchievement.activityTitle.replace(/[^\w\u0600-\u06FF]/g, '_')
+      : 'انجاز';
+    const date = new Date().toISOString().split('T')[0];
+    return `انجاز_${title}_${date}.pdf`;
   }
 }

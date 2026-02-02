@@ -1,6 +1,5 @@
 import {
   Component,
-  ElementRef,
   OnInit,
   ViewChild,
   HostListener,
@@ -11,6 +10,8 @@ import { CriteriaService, SubCriteria } from 'src/app/service/criteria.service';
 import Swal from 'sweetalert2';
 import { ActivityService } from '../../service/achievements-service.service';
 import { ActivatedRoute, Router } from '@angular/router';
+import { QuillEditorComponent } from 'ngx-quill';
+import { debounceTime, distinctUntilChanged } from 'rxjs/operators';
 
 @Component({
   selector: 'app-add-achievement',
@@ -19,7 +20,7 @@ import { ActivatedRoute, Router } from '@angular/router';
 })
 export class AddAchievementComponent implements OnInit {
   @ViewChild('descriptionEditor', { static: true })
-  descriptionEditor!: ElementRef<HTMLDivElement>;
+  descriptionEditor!: QuillEditorComponent;
 
   // متغيرات النموذج الأساسية
   form!: FormGroup;
@@ -50,10 +51,26 @@ export class AddAchievementComponent implements OnInit {
   pdfLoading = false;
   pdfFilename: string | null = null;
 
-  // متغيرات التنسيق
-  isBold = false;
-  isItalic = false;
-  isUnderline = false;
+  // إعدادات Quill Editor
+  quillModules = {
+    toolbar: [
+      ['bold', 'italic', 'underline', 'strike'],
+      [{ 'list': 'ordered' }, { 'list': 'bullet' }],
+      [{ 'indent': '-1' }, { 'indent': '+1' }],
+      [{ 'direction': 'rtl' }],
+      [{ 'size': ['small', false, 'large', 'huge'] }],
+      [{ 'header': [1, 2, 3, 4, 5, 6, false] }],
+      [{ 'color': [] }, { 'background': [] }],
+      [{ 'align': [] }],
+      ['clean'],
+      ['link']
+    ]
+  };
+
+  quillStyles = {
+    height: '250px',
+    direction: 'rtl'
+  };
 
   constructor(
     private fb: FormBuilder,
@@ -68,6 +85,9 @@ export class AddAchievementComponent implements OnInit {
     this.initializeForm();
     this.loadMainCriteria();
     this.checkEditMode();
+
+    // مراقبة تغييرات المحرر
+    this.setupQuillListener();
   }
 
   @HostListener('window:resize')
@@ -176,15 +196,17 @@ export class AddAchievementComponent implements OnInit {
 
       // تحميل النص في المحرر (النص فقط بدون جداول)
       if (this.descriptionEditor) {
-        // إزالة أي جداول من النص القديم
         let textOnly = this.originalDraftData.activityDescription || '';
 
         // إزالة أي HTML للجداول قد يكون موجوداً في النص القديم
         textOnly = textOnly.replace(/<table[\s\S]*?<\/table>/gi, '');
         textOnly = textOnly.replace(/<div[^>]*class=["'][^"']*table[^"']*["'][^>]*>[\s\S]*?<\/div>/gi, '');
 
-        this.descriptionEditor.nativeElement.innerHTML = textOnly || '';
-        this.syncDescriptionToForm();
+        setTimeout(() => {
+          if (this.descriptionEditor.quillEditor) {
+            this.descriptionEditor.quillEditor.root.innerHTML = textOnly || '';
+          }
+        }, 100);
       }
 
       // تحميل المعيار الرئيسي والفرعي
@@ -217,6 +239,17 @@ export class AddAchievementComponent implements OnInit {
       },
       { updateOn: 'change' }
     );
+  }
+
+  private setupQuillListener(): void {
+    this.form.get('activityDescription')?.valueChanges
+      .pipe(
+        debounceTime(300),
+        distinctUntilChanged()
+      )
+      .subscribe((value) => {
+        this.validateDescriptionLength(value);
+      });
   }
 
   get tablesFormArray(): FormArray {
@@ -266,52 +299,41 @@ export class AddAchievementComponent implements OnInit {
     });
   }
 
-  // ==================== وظائف محرر النص ====================
+  // ==================== وظائف Quill Editor ====================
 
-  exec(command: string, value?: string) {
-    this.descriptionEditor.nativeElement.focus();
-    document.execCommand(command, false, value);
-    this.syncDescriptionToForm();
-    this.updateFormatStatus();
-  }
+  onContentChanged(event: any): void {
+    if (event.html) {
+      const plainText = this.extractPlainText(event.html);
 
-  updateFormatStatus() {
-    const selection = window.getSelection();
-    if (!selection || selection.rangeCount === 0) return;
+      // تحديث النموذج بالنص العادي
+      this.form.patchValue({
+        activityDescription: plainText
+      }, { emitEvent: false });
 
-    const range = selection.getRangeAt(0);
-    const parentElement = range.commonAncestorContainer.parentElement;
-
-    if (parentElement) {
-      this.isBold = parentElement.tagName === 'B' || parentElement.tagName === 'STRONG' ||
-                   window.getComputedStyle(parentElement).fontWeight === 'bold' ||
-                   parentElement.style.fontWeight === 'bold';
-
-      this.isItalic = parentElement.tagName === 'I' || parentElement.tagName === 'EM' ||
-                     window.getComputedStyle(parentElement).fontStyle === 'italic' ||
-                     parentElement.style.fontStyle === 'italic';
-
-      this.isUnderline = parentElement.tagName === 'U' ||
-                        window.getComputedStyle(parentElement).textDecoration.includes('underline') ||
-                        parentElement.style.textDecoration.includes('underline');
+      // التحقق من الطول
+      this.validateDescriptionLength(plainText);
     }
   }
 
-  syncDescriptionToForm() {
-    let htmlContent = this.descriptionEditor.nativeElement.innerHTML || '';
-    const plainText = this.extractPlainText(htmlContent);
+  onEditorCreated(editor: any): void {
+    console.log('Quill editor created');
 
-    this.form.get('activityDescription')?.setValue(plainText);
+    // تعيين اتجاه النص لليمين
+    editor.format('direction', 'rtl');
+    editor.format('align', 'right');
+  }
 
-    if (plainText.length < 10) {
-      this.form.get('activityDescription')?.setErrors({ minlength: true });
-    } else if (plainText.length > 1000) {
-      this.form.get('activityDescription')?.setErrors({ maxlength: true });
-    } else {
-      this.form.get('activityDescription')?.setErrors(null);
+  validateDescriptionLength(text: string): void {
+    const length = text ? text.length : 0;
+    const control = this.form.get('activityDescription');
+
+    if (length < 10) {
+      control?.setErrors({ minlength: true });
+    } else if (length > 1000) {
+      control?.setErrors({ maxlength: true });
+    } else if (control?.errors) {
+      control.setErrors(null);
     }
-
-    this.form.get('activityDescription')?.markAsTouched();
   }
 
   private extractPlainText(html: string): string {
@@ -627,9 +649,16 @@ export class AddAchievementComponent implements OnInit {
   }
 
   private prepareFullContentForPDF(): string {
-    const textContent = this.descriptionEditor.nativeElement.innerHTML || '';
-    let fullContent = textContent;
+    let fullContent = '';
 
+    // الحصول على محتوى Quill Editor
+    if (this.descriptionEditor && this.descriptionEditor.quillEditor) {
+      fullContent = this.descriptionEditor.quillEditor.root.innerHTML;
+    } else {
+      fullContent = this.form.get('activityDescription')?.value || '';
+    }
+
+    // إضافة الجداول
     this.tablesArray.forEach((table, index) => {
       fullContent += `<div style="margin: 20px 0;">
         <h4 style="text-align: right; margin-bottom: 10px; color: #333;">
@@ -709,7 +738,6 @@ export class AddAchievementComponent implements OnInit {
   // ==================== وظائف الحفظ والإرسال ====================
 
   submitForReview() {
-    this.syncDescriptionToForm();
     this.markAllFieldsAsTouched();
 
     if (this.form.invalid) {
@@ -725,8 +753,6 @@ export class AddAchievementComponent implements OnInit {
   }
 
   saveAsDraft() {
-    this.syncDescriptionToForm();
-
     if (this.form.get('activityTitle')?.invalid) {
       this.showWarning('العنوان مطلوب لحفظ المسودة.');
       return;
@@ -969,8 +995,8 @@ export class AddAchievementComponent implements OnInit {
 
   resetForm() {
     this.form.reset();
-    if (this.descriptionEditor) {
-      this.descriptionEditor.nativeElement.innerHTML = '';
+    if (this.descriptionEditor && this.descriptionEditor.quillEditor) {
+      this.descriptionEditor.quillEditor.root.innerHTML = '';
     }
     this.attachments = [];
     this.existingAttachments = [];

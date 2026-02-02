@@ -19,6 +19,7 @@ import { SocketService } from './service/socket.service';
 import { NotificationService } from './service/notification.service';
 import { NotificationComponent } from './components/notification/notification.component';
 import { ReportsComponent } from './components/reports/reports.component';
+import { QuillModule } from 'ngx-quill';
 
 @NgModule({
   declarations: [
@@ -49,6 +50,7 @@ import { ReportsComponent } from './components/reports/reports.component';
       closeButton: true,
       preventDuplicates: true,
     }),
+      QuillModule.forRoot()
   ],
   providers: [SocketService, NotificationService],
   bootstrap: [AppComponent],
