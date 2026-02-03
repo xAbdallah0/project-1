@@ -54,16 +54,10 @@ export class AddAchievementComponent implements OnInit {
   // إعدادات Quill Editor
   quillModules = {
     toolbar: [
-      ['bold', 'italic', 'underline', 'strike'],
+      ['bold', 'italic', 'underline'],
       [{ 'list': 'ordered' }, { 'list': 'bullet' }],
-      [{ 'indent': '-1' }, { 'indent': '+1' }],
-      [{ 'direction': 'rtl' }],
-      [{ 'size': ['small', false, 'large', 'huge'] }],
-      [{ 'header': [1, 2, 3, 4, 5, 6, false] }],
-      [{ 'color': [] }, { 'background': [] }],
-      [{ 'align': [] }],
+      [{ 'align': ['right', 'center'] }],
       ['clean'],
-      ['link']
     ]
   };
 
@@ -888,61 +882,71 @@ export class AddAchievementComponent implements OnInit {
   }
 
   private createFormData(status: string, saveStatus: string): FormData {
-    const payload = new FormData();
+  const payload = new FormData();
 
-    // البيانات الأساسية
-    payload.append('activityTitle', this.form.value.activityTitle);
-    payload.append('activityDescription', this.form.value.activityDescription);
-    payload.append('MainCriteria', this.form.value.MainCriteria);
-    payload.append('SubCriteria', this.form.value.SubCriteria);
-    payload.append('status', status);
-    payload.append('SaveStatus', saveStatus);
+  // ================= البيانات الأساسية =================
 
-    const userId = localStorage.getItem('userId');
-    if (userId) {
-      payload.append('user', userId);
-    }
+  payload.append('activityTitle', this.form.value.activityTitle);
 
-    const name = this.form.value.name || localStorage.getItem('fullname') || '';
-    payload.append('name', name);
+  // ✅ إرسال HTML من Quill بدل النص النظيف
+  let htmlDescription = '';
+  if (this.descriptionEditor?.quillEditor) {
+    htmlDescription = this.descriptionEditor.quillEditor.root.innerHTML;
+  }
+  payload.append('activityDescription', htmlDescription);
 
-    // إضافة الجداول كبيانات JSON
-    if (this.tablesArray && this.tablesArray.length > 0) {
-      try {
-        const tablesJson = JSON.stringify(this.tablesArray);
-        payload.append('tables', tablesJson);
-        console.log('Sending tables JSON:', tablesJson);
-      } catch (e) {
-        console.error('Error stringifying tables:', e);
-        payload.append('tables', '[]');
-      }
-    } else {
+  payload.append('MainCriteria', this.form.value.MainCriteria);
+  payload.append('SubCriteria', this.form.value.SubCriteria);
+  payload.append('status', status);
+  payload.append('SaveStatus', saveStatus);
+
+  const userId = localStorage.getItem('userId');
+  if (userId) {
+    payload.append('user', userId);
+  }
+
+  const name = this.form.value.name || localStorage.getItem('fullname') || '';
+  payload.append('name', name);
+
+  // ================= الجداول =================
+
+  if (this.tablesArray && this.tablesArray.length > 0) {
+    try {
+      const tablesJson = JSON.stringify(this.tablesArray);
+      payload.append('tables', tablesJson);
+      console.log('Sending tables JSON:', tablesJson);
+    } catch (e) {
+      console.error('Error stringifying tables:', e);
       payload.append('tables', '[]');
     }
-
-    // إضافة المرفقات الجديدة
-    this.attachments.forEach((file) => {
-      payload.append('Attachments', file, file.name);
-    });
-
-    // إضافة المرفقات الحالية
-    this.existingAttachments.forEach((attachment) => {
-      payload.append('existingAttachments', attachment);
-    });
-
-    // إضافة المرفقات المحذوفة
-    this.deletedAttachments.forEach((deletedAttachment) => {
-      payload.append('deletedAttachments', deletedAttachment);
-    });
-
-    // إضافة draftId إذا كان في وضع التعديل
-    if (this.isEditing && this.draftId) {
-      payload.append('draftId', this.draftId);
-      console.log('Added draftId to FormData:', this.draftId);
-    }
-
-    return payload;
+  } else {
+    payload.append('tables', '[]');
   }
+
+  // ================= المرفقات =================
+
+  this.attachments.forEach((file) => {
+    payload.append('Attachments', file, file.name);
+  });
+
+  this.existingAttachments.forEach((attachment) => {
+    payload.append('existingAttachments', attachment);
+  });
+
+  this.deletedAttachments.forEach((deletedAttachment) => {
+    payload.append('deletedAttachments', deletedAttachment);
+  });
+
+  // ================= وضع التعديل =================
+
+  if (this.isEditing && this.draftId) {
+    payload.append('draftId', this.draftId);
+    console.log('Added draftId to FormData:', this.draftId);
+  }
+
+  return payload;
+}
+
 
   private markAllFieldsAsTouched(): void {
     Object.keys(this.form.controls).forEach((key) => {

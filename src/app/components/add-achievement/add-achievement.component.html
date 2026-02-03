@@ -239,42 +239,43 @@
 
             <!-- قسم وصف الإنجاز -->
             <!-- قسم وصف الإنجاز -->
-<div class="mb-3">
-  <label class="form-label fw-semibold">وصف الإنجاز <span class="text-danger">*</span></label>
+            <div class="mb-3">
+              <label class="form-label fw-semibold">وصف الإنجاز <span class="text-danger">*</span></label>
 
-  <!-- محرر Quill -->
-  <quill-editor
-    #descriptionEditor
-    [modules]="quillModules"
-    [styles]="quillStyles"
-    formControlName="activityDescription"
-    placeholder="اكتب وصف الإنجاز هنا..."
-    (onContentChanged)="onContentChanged($event)"
-    (onEditorCreated)="onEditorCreated($event)"
-  ></quill-editor>
+              <!-- محرر Quill -->
+              <quill-editor
+              #descriptionEditor
+              [modules]="quillModules"
+              [styles]="quillStyles"
+              placeholder="اكتب وصف الإنجاز هنا..."
+              (onContentChanged)="onContentChanged($event)"
+              (onEditorCreated)="onEditorCreated($event)">
+            </quill-editor>
 
-  <div class="d-flex justify-content-between mt-2">
-    <div class="text-muted small">
-      أدخل النص واستخدم أدوات التنسيق
-    </div>
-    <div class="text-end text-muted small">
-      {{ getDescriptionLength() }}/1000 حرف
-    </div>
-  </div>
 
-  <!-- رسائل الخطأ -->
-  <div class="text-danger mt-1" *ngIf="form.get('activityDescription')?.invalid && form.get('activityDescription')?.touched">
-    <span *ngIf="form.get('activityDescription')?.errors?.['required']">
-      الوصف مطلوب.
-    </span>
-    <span *ngIf="form.get('activityDescription')?.errors?.['minlength']">
-      يجب أن يكون الوصف على الأقل 10 أحرف.
-    </span>
-    <span *ngIf="form.get('activityDescription')?.errors?.['maxlength']">
-      الحد الأقصى للوصف 1000 حرف.
-    </span>
-  </div>
-</div>
+
+              <div class="d-flex justify-content-between mt-2">
+                <div class="text-muted small">
+                  أدخل النص واستخدم أدوات التنسيق
+                </div>
+                <div class="text-end text-muted small">
+                  {{ getDescriptionLength() }}/1000 حرف
+                </div>
+              </div>
+
+              <!-- رسائل الخطأ -->
+              <div class="text-danger mt-1" *ngIf="form.get('activityDescription')?.invalid && form.get('activityDescription')?.touched">
+                <span *ngIf="form.get('activityDescription')?.errors?.['required']">
+                  الوصف مطلوب.
+                </span>
+                <span *ngIf="form.get('activityDescription')?.errors?.['minlength']">
+                  يجب أن يكون الوصف على الأقل 10 أحرف.
+                </span>
+                <span *ngIf="form.get('activityDescription')?.errors?.['maxlength']">
+                  الحد الأقصى للوصف 1000 حرف.
+                </span>
+              </div>
+            </div>
 
             <div class="mb-3">
               <label class="form-label fw-semibold" for="name">المسئول عن اضافه الانجاز (اختياري)</label>

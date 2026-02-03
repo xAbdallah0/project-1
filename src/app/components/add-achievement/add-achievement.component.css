@@ -609,4 +609,15 @@
   }
 }
 
+/* جعل الـ placeholder RTL ومحاذي لليمين */
+:host ::ng-deep .ql-editor.ql-blank::before {
+  right: 15px;
+  left: auto;
+  text-align: right;
+  direction: rtl;
+  color: #999;
+  font-style: normal;
+}
+
+
 
