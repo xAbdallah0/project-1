@@ -1167,4 +1167,5 @@ export class AddAchievementComponent implements OnInit {
       confirmButtonText: 'حسناً',
     });
   }
+
 }

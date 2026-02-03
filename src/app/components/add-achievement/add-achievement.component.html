@@ -218,20 +218,27 @@
                     </div>
                   </div>
 
-                  <div class="modal-footer d-flex justify-content-between">
-                    <!-- أزرار إضافية على اليسار -->
+                  <div class="modal-footer d-flex justify-content-between" dir="ltr">
+                    <div class="modal-footer d-flex align-items-center" >
+  <!-- زر الإلغاء -->
+  <button
+    type="button"
+    class="btn btn-secondary me-auto"
+    (click)="closeTableModal()">
+    <i class="fa fa-times me-2"></i>
+    إلغاء
+  </button>
 
-                    <!-- أزرار الإلغاء والحفظ على اليمين -->
-                    <div>
-                      <button type="button" class="btn btn-secondary" (click)="closeTableModal()">
-                        <i class="fa fa-times me-2"></i>
-                        إلغاء
-                      </button>
-                      <button type="button" class="btn btn-success ms-2" (click)="saveTable()">
-                        <i class="fa fa-check me-2"></i>
-                        {{ editingTableIndex !== null ? 'تحديث الجدول' : 'إضافة الجدول' }}
-                      </button>
-                    </div>
+  <!-- زر الحفظ -->
+  <button
+    type="button"
+    class="btn btn-success"
+    (click)="saveTable()">
+    <i class="fa fa-check me-2"></i>
+    {{ editingTableIndex !== null ? 'تحديث الجدول' : 'إضافة الجدول' }}
+  </button>
+</div>
+
                   </div>
                 </div>
               </div>
@@ -255,10 +262,7 @@
 
 
               <div class="d-flex justify-content-between mt-2">
-                <div class="text-muted small">
-                  أدخل النص واستخدم أدوات التنسيق
-                </div>
-                <div class="text-end text-muted small">
+                <div class="text-end text-muted small" dir="rtl">
                   {{ getDescriptionLength() }}/1000 حرف
                 </div>
               </div>

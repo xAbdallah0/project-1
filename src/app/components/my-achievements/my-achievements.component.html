@@ -372,105 +372,79 @@
           <div class="row align-items-center">
             <div class="col-12 col-md-6 mb-2 mb-md-0">
             </div>
-            <div class="col-12 col-md-6 text-md-start">
-              <div class="action-buttons d-flex flex-column flex-md-row gap-2">
+            <div class="col-12 text-md-start">
+  <div class="action-buttons d-flex flex-row flex-nowrap gap-2 flex-wrap-0">
 
-                <!-- حالة قيد المراجعة - يظهر اعتماد أو رفض -->
-                <ng-container *ngIf="selectedAchievement?.status === 'قيد المراجعة' && isAdmin">
-                  <button class="btn btn-success btn-sm flex-fill"
-                    (click)="updateActivityStatus(selectedAchievement._id!, 'معتمد')">
-                    <i class="fa-solid fa-check me-1"></i>اعتماد
-                  </button>
-                  <button class="btn btn-danger btn-sm flex-fill"
-                    (click)="openRejectModal(selectedAchievement)">
-                    <i class="fa-solid fa-times me-1"></i>رفض
-                  </button>
-                </ng-container>
+    <!-- أزرار الحالة حسب الوضع -->
+    <ng-container *ngIf="isAdmin">
+      <ng-container *ngIf="selectedAchievement?.status === 'قيد المراجعة'">
+        <button class="btn btn-success btn-sm" (click)="updateActivityStatus(selectedAchievement._id!, 'معتمد')">
+          <i class="fa-solid fa-check me-1"></i>اعتماد
+        </button>
+        <button class="btn btn-danger btn-sm" (click)="openRejectModal(selectedAchievement)">
+          <i class="fa-solid fa-times me-1"></i>رفض
+        </button>
+      </ng-container>
 
-                <!-- حالة مرفوض - يظهر اعتماد أو إعادة إلى قيد المراجعة -->
-                <ng-container *ngIf="selectedAchievement?.status === 'مرفوض' && isAdmin">
-                  <button class="btn btn-success btn-sm flex-fill"
-                    (click)="updateActivityStatus(selectedAchievement._id!, 'معتمد')">
-                    <i class="fa-solid fa-check me-1"></i>اعتماد
-                  </button>
-                  <button class="btn btn-warning btn-sm flex-fill"
-                    (click)="updateActivityStatus(selectedAchievement._id!, 'قيد المراجعة')">
-                    <i class="fa-solid fa-clock me-1"></i>إعادة إلى المراجعة
-                  </button>
-                </ng-container>
+      <ng-container *ngIf="selectedAchievement?.status === 'مرفوض'">
+        <button class="btn btn-success btn-sm" (click)="updateActivityStatus(selectedAchievement._id!, 'معتمد')">
+          <i class="fa-solid fa-check me-1"></i>اعتماد
+        </button>
+        <button class="btn btn-warning btn-sm" (click)="updateActivityStatus(selectedAchievement._id!, 'قيد المراجعة')">
+          <i class="fa-solid fa-clock me-1"></i>إعادة إلى المراجعة
+        </button>
+      </ng-container>
 
-                <!-- حالة معتمد - يظهر رفض أو إعادة إلى المراجعة -->
-                <ng-container *ngIf="selectedAchievement?.status === 'معتمد' && isAdmin">
-                  <button class="btn btn-danger btn-sm flex-fill"
-                    (click)="openRejectModal(selectedAchievement)">
-                    <i class="fa-solid fa-times me-1"></i>رفض
-                  </button>
-                  <button class="btn btn-warning btn-sm flex-fill"
-                    (click)="updateActivityStatus(selectedAchievement._id!, 'قيد المراجعة')">
-                    <i class="fa-solid fa-clock me-1"></i>إعادة إلى المراجعة
-                  </button>
-                </ng-container>
+      <ng-container *ngIf="selectedAchievement?.status === 'معتمد'">
+        <button class="btn btn-danger btn-sm" (click)="openRejectModal(selectedAchievement)">
+          <i class="fa-solid fa-times me-1"></i>رفض
+        </button>
+        <button class="btn btn-warning btn-sm" (click)="updateActivityStatus(selectedAchievement._id!, 'قيد المراجعة')">
+          <i class="fa-solid fa-clock me-1"></i>إعادة إلى المراجعة
+        </button>
+      </ng-container>
 
-                <!-- حالة مسودة - يظهر حذف فقط -->
-                <ng-container *ngIf="selectedAchievement?.status === 'مسودة' && isAdmin">
-                  <button class="btn btn-danger btn-sm flex-fill"
-                    (click)="deleteFromModal()">
-                    <i class="fa-solid fa-trash me-1"></i>حذف المسودة
-                  </button>
-                </ng-container>
+      <ng-container *ngIf="selectedAchievement?.status === 'مسودة'">
+        <button class="btn btn-danger btn-sm" (click)="deleteFromModal()">
+          <i class="fa-solid fa-trash me-1"></i>حذف المسودة
+        </button>
+      </ng-container>
 
-                <!-- زر التعديل (لجميع الحالات) -->
-                <button class="btn btn-warning btn-sm flex-fill" *ngIf="isAdmin"
-                  (click)="editAchievement(selectedAchievement)">
-                  <i class="fa-solid fa-pen-to-square me-1"></i>تعديل
-                </button>
+      <!-- أزرار التعديل والحذف للجميع -->
+      <button class="btn btn-warning btn-sm" (click)="editAchievement(selectedAchievement)">
+        <i class="fa-solid fa-pen-to-square me-1"></i>تعديل
+      </button>
+      <button class="btn btn-danger btn-sm" (click)="deleteFromModal()">
+        <i class="fa-solid fa-trash me-1"></i>حذف
+      </button>
+    </ng-container>
 
-                <!-- زر الحذف (لجميع الحالات) -->
-                <button class="btn btn-danger btn-sm flex-fill" *ngIf="isAdmin"
-                  (click)="deleteFromModal()">
-                  <i class="fa-solid fa-trash me-1"></i>حذف
-                </button>
+    <!-- زر إغلاق دائمًا -->
+    <button class="btn btn-secondary btn-sm" (click)="closeDetailsModal()">
+      <i class="fa-solid fa-times me-1"></i>إغلاق
+    </button>
 
-                <!-- زر إغلاق -->
-                <button class="btn btn-secondary btn-sm flex-fill" (click)="closeDetailsModal()">
-                  <i class="fa-solid fa-times me-1"></i>إغلاق
-                </button>
+    <!-- أزرار PDF -->
+    <button class="btn btn-primary btn-sm d-flex align-items-center"
+            (click)="generatePdf()" [disabled]="pdfGenerating">
+      <i class="fa me-1" [class.fa-file-pdf]="!pdfGenerating" [class.fa-spinner]="pdfGenerating" [class.fa-spin]="pdfGenerating"></i>
+      {{ pdfGenerating ? 'جاري الإنشاء...' : (pdfFilename ? 'تحديث PDF' : 'إنشاء PDF') }}
+    </button>
 
+    <button class="btn btn-success btn-sm d-flex align-items-center"
+            (click)="openPdf()" [disabled]="!pdfFilename || pdfLoading || pdfGenerating">
+      <i class="fa me-1" [class.fa-eye]="!pdfLoading" [class.fa-spinner]="pdfLoading" [class.fa-spin]="pdfLoading"></i>
+      {{ pdfLoading ? 'جاري التحميل...' : 'عرض PDF' }}
+    </button>
 
-                <!-- مجموعة أزرار PDF -->
-              <div class="d-flex gap-2">
-                <!-- زر إنشاء/تحديث PDF -->
-                <button class="btn btn-primary px-2 py-2 d-flex align-items-center"
-                        (click)="generatePdf()"
-                        [disabled]="pdfGenerating">
-                  <i class="fa me-2"
-                     [class.fa-file-pdf]="!pdfGenerating"
-                     [class.fa-spinner]="pdfGenerating"
-                     [class.fa-spin]="pdfGenerating"></i>
-                  <span class="me-1">{{ pdfGenerating ? 'جاري الإنشاء...' : (pdfFilename ? 'تحديث PDF' : 'إنشاء PDF') }}</span>
-                </button>
+    <button class="btn btn-outline-primary btn-sm d-flex align-items-center"
+            (click)="downloadPdf()" [disabled]="!pdfFilename || pdfLoading">
+      <i class="fa fa-download me-1"></i>تنزيل PDF
+    </button>
 
-                <!-- زر عرض PDF -->
-                <button class="btn btn-success px-1 py-2 d-flex align-items-center"
-                        (click)="openPdf()"
-                        [disabled]="!pdfFilename || pdfLoading || pdfGenerating">
-                  <i class="fa me-2"
-                     [class.fa-eye]="!pdfLoading"
-                     [class.fa-spinner]="pdfLoading"
-                     [class.fa-spin]="pdfLoading"></i>
-                  <span class="me-1">{{ pdfLoading ? 'جاري التحميل...' : 'عرض PDF' }}</span>
-                </button>
+  </div>
+</div>
 
-                <!-- زر تنزيل PDF -->
-                <button class="btn btn-outline-primary px-1 py-2 d-flex align-items-center"
-                        (click)="downloadPdf()"
-                        [disabled]="!pdfFilename || pdfLoading">
-                  <i class="fa fa-download me-2"></i>
-                  <span class="me-1">تنزيل PDF</span>
-                </button>
-              </div>
-              </div>
-            </div>
           </div>
         </div>
       </div>
