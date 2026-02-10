@@ -1060,12 +1060,12 @@ export class AddAchievementComponent implements OnInit {
       return attachmentPath;
     }
     if (attachmentPath.startsWith('/uploads/')) {
-      return `http://localhost:3000${attachmentPath}`;
+      return `http://svu.edu.eg:8093/${attachmentPath}`;
     }
     if (attachmentPath.startsWith('uploads/')) {
-      return `http://localhost:3000/${attachmentPath}`;
+      return `http://svu.edu.eg:8093/${attachmentPath}`;
     }
-    return `http://localhost:3000/uploads/${attachmentPath}`;
+    return `http://svu.edu.eg:8093/uploads/${attachmentPath}`;
   }
 
   getFilePreview(file: File): string {
