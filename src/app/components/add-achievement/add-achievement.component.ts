@@ -1059,7 +1059,7 @@ export class AddAchievementComponent implements OnInit {
       return attachmentPath;
     }
     if (attachmentPath.startsWith('/uploads/')) {
-      return `http://localhost:3000${attachmentPath}`;
+      return `http://localhost:3000/${attachmentPath}`;
     }
     if (attachmentPath.startsWith('uploads/')) {
       return `http://localhost:3000/${attachmentPath}`;
