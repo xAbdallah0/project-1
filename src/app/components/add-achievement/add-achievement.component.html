@@ -369,20 +369,23 @@
                     [class.disabled]="(attachments.length + existingAttachments.length) >= maxFiles">
                     <i class="bi bi-cloud-arrow-up-fill"></i>
                     <span>
-                      {{ (attachments.length + existingAttachments.length) >= maxFiles ? 'تم الوصول للحد الأقصى' : 'رفع ملف' }}
+                      {{ (attachments.length + existingAttachments.length) >= maxFiles ? 'تم الوصول للحد الأقصى' : 'رفع صوره' }}
                     </span>
-                    <input type="file" (change)="onFilesSelected($event)" accept=".pdf,.png,.jpg,.jpeg,.webp,.gif,.bmp"
-                      multiple hidden [disabled]="(attachments.length + existingAttachments.length) >= maxFiles">
+                    <input type="file"
+       (change)="onFilesSelected($event)"
+       accept=".png,.jpg,.jpeg,.webp,.gif,.bmp"
+       multiple hidden
+       [disabled]="(attachments.length + existingAttachments.length) >= maxFiles">
                   </label>
                 </div>
 
                 <div class="form-text mt-2">
-                  <i class="fa-solid fa-circle-info me-1"></i>
-                  الحد الأقصى {{ maxFiles }} ملفات (PDF أو صور) - حجم الملف لا يتعدى {{ maxFileSizeMB }}MB
-                  <span *ngIf="(attachments.length + existingAttachments.length) > 0" class="fw-bold text-primary">
-                    • المرفقات المضافة: {{ attachments.length + existingAttachments.length }}/{{ maxFiles }}
-                  </span>
-                </div>
+  <i class="fa-solid fa-circle-info me-1"></i>
+  الحد الأقصى {{ maxFiles }} صور (PNG, JPG, JPEG, WEBP, GIF, BMP) - حجم الملف لا يتعدى {{ maxFileSizeMB }}MB
+  <span *ngIf="(attachments.length + existingAttachments.length) > 0" class="fw-bold text-primary">
+    • الصور المضافة: {{ attachments.length + existingAttachments.length }}/{{ maxFiles }}
+  </span>
+</div>
               </div>
             </div>
 

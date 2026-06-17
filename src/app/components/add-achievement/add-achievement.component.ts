@@ -1034,13 +1034,12 @@ export class AddAchievementComponent implements OnInit {
   }
 
   getFileType(attachmentUrl: string): string {
-    if (!attachmentUrl) return '';
-    const ext = attachmentUrl.split('.').pop()?.toLowerCase() || '';
-    if (['pdf'].includes(ext)) return 'PDF';
-    if (['png', 'jpg', 'jpeg', 'webp', 'gif', 'bmp'].includes(ext))
-      return 'صورة';
-    return 'ملف';
-  }
+  if (!attachmentUrl) return '';
+  const ext = attachmentUrl.split('.').pop()?.toLowerCase() || '';
+  if (['png', 'jpg', 'jpeg', 'webp', 'gif', 'bmp'].includes(ext))
+    return 'صورة';
+  return 'ملف';
+}
 
   isImage(attachmentUrl: string): boolean {
     if (!attachmentUrl) return false;
@@ -1083,36 +1082,37 @@ export class AddAchievementComponent implements OnInit {
   // ==================== وظائف المرفقات ====================
 
   onFilesSelected(ev: Event) {
-    const input = ev.target as HTMLInputElement;
-    if (!input.files) return;
+  const input = ev.target as HTMLInputElement;
+  if (!input.files) return;
 
-    const files = Array.from(input.files);
-    const totalFiles =
-      this.attachments.length + files.length + this.existingAttachments.length;
+  const files = Array.from(input.files);
+  const totalFiles =
+    this.attachments.length + files.length + this.existingAttachments.length;
 
-    if (totalFiles > this.maxFiles) {
-      this.showWarning(`الحد الأقصى ${this.maxFiles} ملفات فقط.`);
-      return;
-    }
-
-    for (const f of files) {
-      const sizeMB = f.size / (1024 * 1024);
-      const ext = f.name.split('.').pop()?.toLowerCase() || '';
-      const allowedImage = ['png', 'jpg', 'jpeg', 'webp', 'gif', 'bmp'];
-
-      if (!(ext === 'pdf' || allowedImage.includes(ext))) {
-        this.showError('نوع ملف غير مدعوم. يُسمح فقط بالصور أو PDF.');
-        continue;
-      }
-      if (sizeMB > this.maxFileSizeMB) {
-        this.showError(`حجم الملف أكبر من ${this.maxFileSizeMB}MB.`);
-        continue;
-      }
-      this.attachments.push(f);
-    }
-
-    input.value = '';
+  if (totalFiles > this.maxFiles) {
+    this.showWarning(`الحد الأقصى ${this.maxFiles} ملفات فقط.`);
+    return;
   }
+
+  for (const f of files) {
+    const sizeMB = f.size / (1024 * 1024);
+    const ext = f.name.split('.').pop()?.toLowerCase() || '';
+    const allowedImage = ['png', 'jpg', 'jpeg', 'webp', 'gif', 'bmp'];
+
+    // ✅ السماح بالصور فقط
+    if (!allowedImage.includes(ext)) {
+      this.showError('نوع ملف غير مدعوم. يُسمح فقط بالصور (PNG, JPG, JPEG, WEBP, GIF, BMP).');
+      continue;
+    }
+    if (sizeMB > this.maxFileSizeMB) {
+      this.showError(`حجم الملف أكبر من ${this.maxFileSizeMB}MB.`);
+      continue;
+    }
+    this.attachments.push(f);
+  }
+
+  input.value = '';
+}
 
   removeAttachment(index: number) {
     this.attachments.splice(index, 1);

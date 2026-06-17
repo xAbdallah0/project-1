@@ -1,7 +1,8 @@
 import { Component, OnInit } from '@angular/core';
 import { ActivityService } from 'src/app/service/achievements-service.service';
-import { Activity, TableData } from 'src/app/model/achievement'; // استيراد TableData أيضاً
+import { Activity, TableData } from 'src/app/model/achievement';
 import { Router } from '@angular/router';
+import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
 import Swal from 'sweetalert2';
 
 @Component({
@@ -16,10 +17,12 @@ export class DraftsComponent implements OnInit {
   showImageModal = false;
   showTableModal = false;
   selectedTable: TableData | null = null;
+  isExpanded: { [key: string]: boolean } = {};
 
   constructor(
     private activityService: ActivityService,
-    private router: Router
+    private router: Router,
+    private sanitizer: DomSanitizer
   ) {}
 
   ngOnInit(): void {
@@ -44,20 +47,45 @@ export class DraftsComponent implements OnInit {
     }
   }
 
+  // ==== وظائف عرض الوصف ====
+  getSafeDescription(description: string): SafeHtml {
+    if (!description) {
+      return this.sanitizer.bypassSecurityTrustHtml('لا يوجد وصف');
+    }
+    return this.sanitizer.bypassSecurityTrustHtml(description);
+  }
+
+  getPlainTextDescription(description: string): string {
+    if (!description) return 'لا يوجد وصف';
+
+    const tempDiv = document.createElement('div');
+    tempDiv.innerHTML = description;
+    const text = tempDiv.textContent || tempDiv.innerText || '';
+
+    return text.length > 150 ? text.substring(0, 150) + '...' : text;
+  }
+
+  hasLongDescription(description: string): boolean {
+    if (!description) return false;
+    const text = this.getPlainTextDescription(description);
+    return text.length > 150;
+  }
+
+  toggleDescription(id: string): void {
+    this.isExpanded[id] = !this.isExpanded[id];
+  }
+
   // ==== وظائف الجداول ====
   hasTables(activity: Activity): boolean {
     if (!activity) return false;
 
-    // التحقق من وجود tables في النشاط
     const tables = activity.tables;
     if (tables === undefined || tables === null) return false;
 
-    // إذا كان string (JSON)، تحقق أنه غير فارغ
     if (typeof tables === 'string') {
       return tables.trim() !== '' && tables.trim() !== '[]';
     }
 
-    // إذا كان array، تحقق أن يحتوي على عناصر
     if (Array.isArray(tables)) {
       return tables.length > 0;
     }
@@ -70,11 +98,9 @@ export class DraftsComponent implements OnInit {
 
     let tables = activity.tables;
 
-    // إذا كان tables هو سلسلة JSON، نحوله إلى مصفوفة
     if (typeof tables === 'string') {
       try {
         const parsed = JSON.parse(tables);
-        // تأكد من أن الناتج مصفوفة
         tables = Array.isArray(parsed) ? parsed : [];
       } catch (e) {
         console.error('Error parsing tables JSON:', e);
@@ -82,7 +108,6 @@ export class DraftsComponent implements OnInit {
       }
     }
 
-    // التأكد من أن tables هي مصفوفة
     if (Array.isArray(tables)) {
       return tables.map((table: any, index: number) => {
         return {
@@ -126,12 +151,10 @@ export class DraftsComponent implements OnInit {
   getCleanDescription(description: string): string {
     if (!description) return 'لا يوجد وصف';
 
-    // إذا كان الوصف يحتوي على HTML
     if (description.includes('<') && description.includes('>')) {
       return this.stripHtmlTags(description);
     }
 
-    // إذا كان الوصف يحتوي على جداول كمعلومات JSON
     if (description.includes('[{') && description.includes('rows') && description.includes('cols')) {
       return 'هذا الوصف يحتوي على جداول متضمنة. يمكن عرضها في قسم الجداول.';
     }
@@ -145,7 +168,6 @@ export class DraftsComponent implements OnInit {
     const tempDiv = document.createElement('div');
     tempDiv.innerHTML = html;
 
-    // إزالة الجداول من النص
     const tables = tempDiv.querySelectorAll('table');
     tables.forEach(table => table.remove());
 
@@ -235,8 +257,7 @@ export class DraftsComponent implements OnInit {
 
   loadDrafts(): void {
     this.loading = true;
-    const token =
-      localStorage.getItem('token') || localStorage.getItem('authToken');
+    const token = localStorage.getItem('token') || localStorage.getItem('authToken');
 
     if (!token) {
       Swal.fire({
@@ -255,24 +276,16 @@ export class DraftsComponent implements OnInit {
       next: (response) => {
         if (response.success) {
           this.draftActivities = response.data || [];
+          console.log('Loaded draft activities:', this.draftActivities);
 
-          // تحليل الجداول في كل نشاط
           this.draftActivities.forEach(activity => {
             if (activity.tables) {
               console.log('Tables found for activity:', activity.activityTitle, activity.tables);
             }
           });
 
-          console.log('Loaded draft activities:', this.draftActivities);
-
           if (this.draftActivities.length === 0) {
-            Swal.fire({
-              icon: 'info',
-              title: 'لا توجد مسودات',
-              text: 'لا توجد مسودات لحفظها حالياً',
-              confirmButtonText: 'حسناً',
-              confirmButtonColor: '#3085d6',
-            });
+            console.log('لا توجد مسودات');
           }
         } else {
           const errorMessage = (response as any).message || 'Unknown error';
@@ -288,6 +301,14 @@ export class DraftsComponent implements OnInit {
       },
       error: (err) => {
         console.error('Error loading drafts:', err);
+
+        if (err.status === 404) {
+          this.draftActivities = [];
+          console.log('لا توجد مسودات (404)');
+          this.loading = false;
+          return;
+        }
+
         if (err.status === 401) {
           Swal.fire({
             icon: 'warning',
@@ -317,10 +338,8 @@ export class DraftsComponent implements OnInit {
   editDraft(activity: Activity): void {
     console.log('Editing draft:', activity.activityTitle);
 
-    // نسخ الجداول بشكل آمن للتعديل
     const draftToEdit = { ...activity };
 
-    // التأكد من أن tables هي مصفوفة عند التعديل
     if (draftToEdit.tables && typeof draftToEdit.tables === 'string') {
       try {
         draftToEdit.tables = JSON.parse(draftToEdit.tables);
