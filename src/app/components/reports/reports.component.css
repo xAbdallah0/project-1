@@ -1647,3 +1647,181 @@ body.dropdown-open {
         display: none;
     }
 }
+
+/* ===== Date Presets & Current Date ===== */
+.current-date-badge {
+    display: inline-flex;
+    align-items: center;
+    background: linear-gradient(135deg, #10b981, #059669);
+    color: white;
+    padding: 4px 12px;
+    border-radius: 20px;
+    font-size: 0.8rem;
+    font-weight: 600;
+    box-shadow: 0 2px 8px rgba(16, 185, 129, 0.3);
+}
+
+.date-presets {
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 12px;
+    padding: 1rem;
+    margin-bottom: 1rem;
+}
+
+.preset-label {
+    font-weight: 600;
+    color: #475569;
+    font-size: 0.9rem;
+    margin-bottom: 0.75rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.preset-buttons {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+}
+
+.btn-preset {
+    background: #ffffff;
+    border: 1px solid #d1d5db;
+    color: #374151;
+    border-radius: 20px;
+    padding: 0.5rem 1rem;
+    font-size: 0.8rem;
+    font-weight: 600;
+    transition: all 0.25s ease;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    white-space: nowrap;
+}
+
+.btn-preset:hover {
+    background: #e0e7ff;
+    border-color: #3b82f6;
+    color: #1e40af;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 8px rgba(59, 130, 246, 0.15);
+}
+
+.btn-preset.active {
+    background: linear-gradient(135deg, #3b82f6, #1e40af);
+    border-color: #3b82f6;
+    color: white;
+    box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+}
+
+@media (max-width: 768px) {
+    .preset-buttons {
+        gap: 0.4rem;
+    }
+    .btn-preset {
+        padding: 0.4rem 0.75rem;
+        font-size: 0.75rem;
+    }
+    .current-date-badge {
+        font-size: 0.7rem;
+        padding: 3px 8px;
+    }
+}
+/* ===== Date Range Display in Report Results ===== */
+.date-range-section {
+    background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%);
+    border-right: 4px solid #0ea5e9;
+}
+
+.date-range-header {
+    margin-bottom: 1rem;
+}
+
+.date-range-display {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 1rem;
+    flex-wrap: wrap;
+}
+
+.date-box {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    background: white;
+    border: 2px solid #e2e8f0;
+    border-radius: 12px;
+    padding: 0.75rem 1.5rem;
+    min-width: 180px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+    transition: all 0.3s ease;
+}
+
+.date-box:hover {
+    border-color: #0ea5e9;
+    box-shadow: 0 4px 12px rgba(14, 165, 233, 0.15);
+    transform: translateY(-2px);
+}
+
+.date-box-label {
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: #64748b;
+    margin-bottom: 0.25rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.date-box-value {
+    font-size: 1rem;
+    font-weight: 700;
+    color: #1e40af;
+    direction: rtl;
+}
+
+.date-arrow {
+    color: #0ea5e9;
+    font-size: 1.25rem;
+    animation: pulse-arrow 2s infinite;
+}
+
+@keyframes pulse-arrow {
+    0%, 100% {
+        transform: translateX(0);
+        opacity: 0.7;
+    }
+    50% {
+        transform: translateX(5px);
+        opacity: 1;
+    }
+}
+
+@media (max-width: 576px) {
+    .date-range-display {
+        flex-direction: column;
+        gap: 0.75rem;
+    }
+    
+    .date-box {
+        width: 100%;
+        min-width: auto;
+    }
+    
+    .date-arrow {
+        transform: rotate(90deg);
+    }
+    
+    @keyframes pulse-arrow {
+        0%, 100% {
+            transform: rotate(90deg) translateX(0);
+            opacity: 0.7;
+        }
+        50% {
+            transform: rotate(90deg) translateX(5px);
+            opacity: 1;
+        }
+    }
+}

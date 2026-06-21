@@ -32,7 +32,7 @@ export interface Activity {
   _id?: string;
   user: { _id?: string; name?: string; fullname?: string } | string;
   activityTitle: string;
-  activityDescription: string;
+  activityDescription: string | string[];
   MainCriteria: { _id?: string; name?: string } | string;
   SubCriteria: { _id?: string; name?: string } | string;
   department?: { _id?: string; name?: string } | string;

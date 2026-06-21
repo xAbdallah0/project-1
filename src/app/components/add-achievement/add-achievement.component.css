@@ -619,5 +619,195 @@
   font-style: normal;
 }
 
+/* ==================== CSS للخطوط والأحجام ==================== */
 
+.fonts-sizes-controls {
+  animation: slideDown 0.3s ease-in-out;
+}
+
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* أزرار التحكم */
+.fonts-sizes-controls .btn {
+  transition: all 0.3s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+.fonts-sizes-controls .btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.fonts-sizes-controls .btn-info {
+  background: linear-gradient(135deg, #17a2b8, #0ea5a5);
+  border: none;
+  color: white;
+}
+
+.fonts-sizes-controls .btn-info:hover {
+  background: linear-gradient(135deg, #138496, #0c8b8b);
+}
+
+.fonts-sizes-controls .btn-success {
+  background: linear-gradient(135deg, #28a745, #1e7e34);
+  border: none;
+  color: white;
+}
+
+.fonts-sizes-controls .btn-success:hover {
+  background: linear-gradient(135deg, #218838, #1a6428);
+}
+
+.fonts-sizes-controls .btn-warning {
+  background: linear-gradient(135deg, #ffc107, #e0a800);
+  border: none;
+  color: #333;
+}
+
+.fonts-sizes-controls .btn-warning:hover {
+  background: linear-gradient(135deg, #ffb300, #cc8800);
+}
+
+.fonts-sizes-controls .btn-secondary {
+  background: linear-gradient(135deg, #6c757d, #5a6268);
+  border: none;
+  color: white;
+}
+
+.fonts-sizes-controls .btn-secondary:hover {
+  background: linear-gradient(135deg, #5a6268, #495057);
+}
+
+/* أيقونات الأزرار */
+.fonts-sizes-controls .btn i {
+  margin-left: 5px;
+}
+
+/* القائمة السريعة */
+.fonts-sizes-controls [style*="padding: 6px 12px"] {
+  transition: all 0.2s ease;
+  cursor: pointer;
+}
+
+.fonts-sizes-controls [style*="padding: 6px 12px"]:hover {
+  transform: scale(1.05);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+/* جدول المعلومات */
+.fonts-info-table table {
+  animation: fadeIn 0.3s ease-in-out;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.fonts-info-table thead {
+  position: sticky;
+  top: 0;
+  background: #f8f9fa !important;
+}
+
+.fonts-info-table tbody tr:hover {
+  background: #f5f5f5;
+}
+
+.fonts-info-table td {
+  vertical-align: middle;
+}
+
+/* نصائح ومعلومات */
+.fonts-info-table + div {
+  margin-top: 10px;
+  padding: 10px 15px;
+  background: #d1ecf1;
+  border-left: 4px solid #0c5460;
+  border-radius: 4px;
+}
+
+/* Sweet Alert مخصص */
+:global(.swal2-popup) {
+  direction: rtl;
+  text-align: right;
+}
+
+:global(.swal2-title) {
+  color: #333;
+  font-weight: 600;
+  margin-bottom: 15px;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .fonts-sizes-controls {
+    padding: 10px !important;
+  }
+
+  .fonts-sizes-controls > div:first-child {
+    flex-direction: column-reverse;
+  }
+
+  .fonts-sizes-controls .btn {
+    width: 100%;
+    margin-bottom: 8px;
+  }
+
+  .fonts-info-table {
+    overflow-x: auto;
+  }
+
+  .fonts-info-table table {
+    font-size: 12px;
+  }
+}
+
+/* تأثيرات إضافية */
+.fonts-sizes-controls .btn::before {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 0;
+  height: 0;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.5);
+  transform: translate(-50%, -50%);
+  transition: width 0.6s, height 0.6s;
+}
+
+.fonts-sizes-controls .btn:active::before {
+  width: 300px;
+  height: 300px;
+}
+
+/* درجات اللون للعلامات */
+.fonts-sizes-controls [style*="border-left: 4px solid"] {
+  padding: 12px 15px;
+  border-radius: 4px;
+  background: #fffbea;
+}
+
+/* تحسين النصوص العربية */
+.fonts-sizes-controls,
+.fonts-info-table {
+  font-feature-settings: 'liga' 1, 'calt' 1;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
 

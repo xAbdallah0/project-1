@@ -1,3 +1,5 @@
+@import url('https://fonts.googleapis.com/css2?family=Cairo:wght@400;700&family=Tajawal:wght@400;700&family=Amiri:wght@400;700&family=Noto+Naskh+Arabic:wght@400;700&family=Reem+Kufi:wght@400;700&family=Lateef&family=Scheherazade+New:wght@400;700&family=Rakkas&family=Mada:wght@400;700&family=IBM+Plex+Arabic:wght@400;700&family=Harmattan:wght@400;700&family=Markazi+Text:wght@400;700&family=Aref+Ruqaa&family=El+Messiri:wght@400;700&family=Jomhuria&family=Mirza:wght@400;700&family=Katibeh&family=Lalezar&display=swap');
+
 .toast-title {
     font-weight: bold;
     font-size: 15px;
@@ -26,3 +28,254 @@
     background-color: #0dcaf0 !important;
 }
 
+.ql-toolbar.ql-snow {
+    border-color: #d1d5db;
+    border-radius: 8px 8px 0 0;
+    background: #f8fafc;
+    direction: rtl;
+}
+
+.ql-container.ql-snow {
+    border-color: #d1d5db;
+    border-radius: 0 0 8px 8px;
+    font-family: 'Tajawal', 'Cairo', sans-serif;
+    font-size: 15px;
+    direction: rtl;
+}
+
+.ql-editor {
+    direction: rtl;
+    text-align: right;
+    line-height: 1.75;
+    min-height: 160px;
+}
+
+.compact-rich-editor .ql-editor {
+    min-height: 110px;
+}
+
+.ql-editor.ql-blank::before {
+    right: 15px;
+    left: auto;
+    color: #9ca3af;
+    font-style: normal;
+    text-align: right;
+}
+
+.ql-snow .ql-formats {
+    margin-right: 0;
+    margin-left: 12px;
+}
+
+.ql-snow .ql-picker.ql-font {
+    width: 155px;
+}
+
+.ql-snow .ql-picker.ql-size {
+    width: 70px;
+}
+
+.ql-font-cairo,
+.ql-editor .ql-font-cairo,
+.rich-text-content .ql-font-cairo { font-family: 'Cairo', sans-serif; }
+.ql-font-tajawal,
+.ql-editor .ql-font-tajawal,
+.rich-text-content .ql-font-tajawal { font-family: 'Tajawal', sans-serif; }
+.ql-font-amiri,
+.ql-editor .ql-font-amiri,
+.rich-text-content .ql-font-amiri { font-family: 'Amiri', serif; }
+.ql-font-noto-naskh,
+.ql-editor .ql-font-noto-naskh,
+.rich-text-content .ql-font-noto-naskh { font-family: 'Noto Naskh Arabic', serif; }
+.ql-font-reem-kufi,
+.ql-editor .ql-font-reem-kufi,
+.rich-text-content .ql-font-reem-kufi { font-family: 'Reem Kufi', sans-serif; }
+.ql-font-lateef,
+.ql-editor .ql-font-lateef,
+.rich-text-content .ql-font-lateef { font-family: 'Lateef', serif; }
+.ql-font-scheherazade,
+.ql-editor .ql-font-scheherazade,
+.rich-text-content .ql-font-scheherazade { font-family: 'Scheherazade New', serif; }
+.ql-font-rakkas,
+.ql-editor .ql-font-rakkas,
+.rich-text-content .ql-font-rakkas { font-family: 'Rakkas', cursive; }
+.ql-font-mada,
+.ql-editor .ql-font-mada,
+.rich-text-content .ql-font-mada { font-family: 'Mada', sans-serif; }
+.ql-font-ibm-plex-arabic,
+.ql-editor .ql-font-ibm-plex-arabic,
+.rich-text-content .ql-font-ibm-plex-arabic { font-family: 'IBM Plex Arabic', sans-serif; }
+.ql-font-harmattan,
+.ql-editor .ql-font-harmattan,
+.rich-text-content .ql-font-harmattan { font-family: 'Harmattan', sans-serif; }
+.ql-font-markazi,
+.ql-editor .ql-font-markazi,
+.rich-text-content .ql-font-markazi { font-family: 'Markazi Text', serif; }
+.ql-font-aref-ruqaa,
+.ql-editor .ql-font-aref-ruqaa,
+.rich-text-content .ql-font-aref-ruqaa { font-family: 'Aref Ruqaa', serif; }
+.ql-font-el-messiri,
+.ql-editor .ql-font-el-messiri,
+.rich-text-content .ql-font-el-messiri { font-family: 'El Messiri', sans-serif; }
+.ql-font-jomhuria,
+.ql-editor .ql-font-jomhuria,
+.rich-text-content .ql-font-jomhuria { font-family: 'Jomhuria', serif; }
+.ql-font-mirza,
+.ql-editor .ql-font-mirza,
+.rich-text-content .ql-font-mirza { font-family: 'Mirza', cursive; }
+.ql-font-katibeh,
+.ql-editor .ql-font-katibeh,
+.rich-text-content .ql-font-katibeh { font-family: 'Katibeh', serif; }
+.ql-font-lalezar,
+.ql-editor .ql-font-lalezar,
+.rich-text-content .ql-font-lalezar { font-family: 'Lalezar', cursive; }
+.ql-font-arial,
+.ql-editor .ql-font-arial,
+.rich-text-content .ql-font-arial { font-family: Arial, sans-serif; }
+.ql-font-times-new-roman,
+.ql-editor .ql-font-times-new-roman,
+.rich-text-content .ql-font-times-new-roman { font-family: 'Times New Roman', serif; }
+
+.rich-text-content {
+    direction: rtl;
+    text-align: right;
+    word-break: break-word;
+}
+
+.rich-text-content p {
+    margin-bottom: 0.5rem;
+}
+
+.rich-text-content p:last-child {
+    margin-bottom: 0;
+}
+
+.rich-text-content ul,
+.rich-text-content ol {
+    padding-right: 1.25rem;
+    padding-left: 0;
+}
+
+.rich-text-content table,
+.ql-editor table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 0.75rem 0;
+}
+
+.rich-text-content td,
+.rich-text-content th,
+.ql-editor td,
+.ql-editor th {
+    border: 1px solid #dee2e6;
+    padding: 0.5rem;
+    text-align: right;
+}
+
+
+/* === Description & Table Design === */
+.description-content {
+    background: #f8f9fa;
+    border: 1px solid #e9ecef;
+    border-radius: 8px;
+    padding: 12px;
+    max-height: 200px;
+    overflow-y: auto;
+    line-height: 1.6;
+    font-family: 'Tajawal', 'Cairo', sans-serif;
+}
+
+.description-content::-webkit-scrollbar {
+    width: 6px;
+}
+
+.description-content::-webkit-scrollbar-track {
+    background: #f1f1f1;
+    border-radius: 3px;
+}
+
+.description-content::-webkit-scrollbar-thumb {
+    background: #c1c1c1;
+    border-radius: 3px;
+}
+
+.description-content::-webkit-scrollbar-thumb:hover {
+    background: #a8a8a8;
+}
+
+.description-text {
+    font-size: 0.9rem;
+    color: #495057;
+    line-height: 1.7;
+    font-family: 'Tajawal', 'Cairo', sans-serif;
+}
+
+.description-text strong {
+    font-weight: 700;
+    color: #2c5c2c;
+}
+
+.description-text em {
+    font-style: italic;
+    color: #666;
+}
+
+.description-text u {
+    text-decoration: underline;
+}
+
+.description-text p {
+    margin-bottom: 0.5rem;
+}
+
+.description-text p:last-child {
+    margin-bottom: 0;
+}
+
+.description-text br {
+    content: "";
+    display: block;
+    margin-bottom: 0.3rem;
+}
+
+.table-card {
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    padding: 1rem;
+    transition: all 0.3s ease;
+}
+
+.table-card:hover {
+    border-color: #3b82f6;
+    box-shadow: 0 4px 12px rgba(30, 58, 138, 0.08);
+}
+
+.table-card .table-responsive {
+    border-radius: 6px;
+    overflow: hidden;
+}
+
+.table-card table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 0;
+    font-family: 'Tajawal', 'Cairo', sans-serif;
+    font-size: 0.85rem;
+}
+
+.table-card td,
+.table-card th {
+    border: 1px solid #dee2e6;
+    padding: 0.5rem;
+    text-align: right;
+    background: #fff;
+}
+
+.table-card tr:nth-child(even) td {
+    background: #f8fafc;
+}
+
+.table-card tr:hover td {
+    background: #f0f9ff;
+}

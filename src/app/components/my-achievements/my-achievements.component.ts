@@ -3,6 +3,19 @@ import { ActivityService } from '../../service/achievements-service.service';
 import { Activity } from 'src/app/model/achievement';
 import Swal from 'sweetalert2';
 import { Router } from '@angular/router';
+import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
+import { environment } from 'src/app/environments/environments';
+import {
+  COMPACT_RICH_TEXT_EDITOR_MODULES,
+  COMPACT_RICH_TEXT_EDITOR_STYLES,
+  cleanRichTextHtml,
+  htmlToPlainText,
+  registerQuillFormats,
+  extractDescriptionParts,
+  getTextFromDescription,
+  getTablesFromDescription,
+  DescriptionPart,
+} from 'src/app/shared/quill-editor.config';
 
 // تعريف نوع للمعايير
 interface Criteria {
@@ -40,11 +53,16 @@ export class MyAchievementsComponent implements OnInit {
   selectedImage = '';
   isAdmin = false;
   currentUser: any = null;
+  rejectionQuillModules = COMPACT_RICH_TEXT_EDITOR_MODULES;
+  rejectionQuillStyles = COMPACT_RICH_TEXT_EDITOR_STYLES;
 
   constructor(
     private activityService: ActivityService,
-    private router: Router
-  ) {}
+    private router: Router,
+    private sanitizer: DomSanitizer
+  ) {
+    registerQuillFormats();
+  }
 
   ngOnInit(): void {
     this.loadActivities();
@@ -115,14 +133,37 @@ export class MyAchievementsComponent implements OnInit {
     });
   }
 
-  getCleanDescription(description: string): string {
-    if (!description) return 'لا يوجد وصف';
+  getCleanDescription(description: string | string[]): string {
+    const text = getTextFromDescription(description);
+    if (!text || !text.trim()) return 'لا يوجد وصف';
 
-    if (description.includes('<') && description.includes('>')) {
-      return this.stripHtmlTags(description);
+    if (text.includes('<') && text.includes('>')) {
+      return this.stripHtmlTags(text);
     }
 
-    return description;
+    return text;
+  }
+
+  getTableParts(description: string | string[]): string[] {
+    return getTablesFromDescription(description);
+  }
+
+  getTableSafeHtml(tableHtml: string): SafeHtml {
+    return this.sanitizer.bypassSecurityTrustHtml(tableHtml);
+  }
+
+  getRichDescription(description: string | string[]): string {
+    const text = getTextFromDescription(description);
+    if (!text || !text.trim()) return this.getCleanDescription(text);
+    return cleanRichTextHtml(text);
+  }
+
+  onRejectionReasonChanged(event: any): void {
+    this.rejectionReason = event.html || '';
+  }
+
+  getRichRejectionReason(reason: string): string {
+    return cleanRichTextHtml(reason || '');
   }
 
   private stripHtmlTags(html: string): string {
@@ -131,10 +172,9 @@ export class MyAchievementsComponent implements OnInit {
     return tempDiv.textContent || tempDiv.innerText || '';
   }
 
-  getShortDescription(description: string, length: number = 50): string {
-    if (!description) return 'لا يوجد وصف';
-
+  getShortDescription(description: string | string[], length: number = 50): string {
     const plainText = this.getCleanDescriptionText(description);
+    if (!plainText || !plainText.trim()) return 'لا يوجد وصف';
     return plainText.length > length
       ? plainText.substring(0, length) + '...'
       : plainText;
@@ -148,7 +188,7 @@ export class MyAchievementsComponent implements OnInit {
       list = list.filter(
         (a) =>
           a.activityTitle?.toLowerCase().includes(term) ||
-          this.getCleanDescriptionText(a.activityDescription || '')
+          this.getCleanDescriptionText(a.activityDescription || [])
             .toLowerCase()
             .includes(term) ||
           a.name?.toLowerCase().includes(term) ||
@@ -164,8 +204,7 @@ export class MyAchievementsComponent implements OnInit {
     return list;
   }
 
-  private getCleanDescriptionText(description: string): string {
-    if (!description) return '';
+  private getCleanDescriptionText(description: string | string[]): string {
     return this.getCleanDescription(description);
   }
 
@@ -275,11 +314,8 @@ export class MyAchievementsComponent implements OnInit {
     const achievement = this.selectedAchievement;
     if (!achievement || !achievement._id) return;
 
-    if (
-      this.rejectionReason &&
-      this.rejectionReason.trim().length > 0 &&
-      this.rejectionReason.trim().length < 5
-    ) {
+    const reasonText = htmlToPlainText(this.rejectionReason || '');
+    if (reasonText.length > 0 && reasonText.length < 5) {
       Swal.fire(
         'تحذير',
         'إذا قمت بكتابة سبب الرفض، فيجب أن يكون على الأقل 5 أحرف',
@@ -288,9 +324,7 @@ export class MyAchievementsComponent implements OnInit {
       return;
     }
 
-    const reason = this.rejectionReason
-      ? this.rejectionReason.trim()
-      : undefined;
+    const reason = reasonText ? cleanRichTextHtml(this.rejectionReason).trim() : undefined;
     this.updateActivityStatus(achievement._id, 'مرفوض', reason);
   }
 
@@ -389,7 +423,7 @@ export class MyAchievementsComponent implements OnInit {
     if (attachment.startsWith('http')) {
       return attachment;
     } else {
-      return `http://localhost:3000${attachment}`;
+      return environment.baseUrl + attachment;
     }
   }
 
@@ -640,7 +674,7 @@ export class MyAchievementsComponent implements OnInit {
       },
       error: (err: any) => {
         this.pdfLoading = false;
-        const fileUrl = `http://localhost:3000/generated-files/${fullFilename}`;
+        const fileUrl = environment.baseUrl + '/generated-files/' + fullFilename;
         window.open(fileUrl, '_blank');
         Swal.fire({
           title: 'تنبيه',

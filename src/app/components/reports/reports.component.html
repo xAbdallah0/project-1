@@ -6,7 +6,7 @@
             <div class="header-content">
                 <div class="header-text">
                     <h1><i class="fas fa-chart-pie"></i> تقارير الانجازات</h1>
-                    <p class="header-description">إنشاء تقارير PDF و DOCX للانجازات حسب الفلتره المطلوبة</p>
+                    <p class="header-description">إنشاء تقارير PDF للانجازات حسب الفلتره المطلوبة</p>
                 </div>
                 <div class="header-mobile-actions">
                     <button class="btn btn-mobile-filter" (click)="toggleFilters()">
@@ -224,7 +224,58 @@
                                     <i class="fas fa-calendar-day text-primary"></i>
                                     نطاق التاريخ
                                     <span class="required-badge">إجباري</span>
+                                    <span class="current-date-badge ms-2">
+                                        <i class="fas fa-clock me-1"></i>
+                                        {{ currentDateDisplay }}
+                                    </span>
                                 </h6>
+
+                                <!-- Date Preset Buttons -->
+                                <div class="date-presets mb-3">
+                                    <div class="preset-label">
+                                        <i class="fas fa-bolt text-warning me-1"></i>
+                                        اختيار سريع:
+                                    </div>
+                                    <div class="preset-buttons">
+                                        <button type="button" class="btn btn-sm btn-preset"
+                                            (click)="setDatePreset('today')"
+                                            [class.active]="filters.startDate === filters.endDate && filters.startDate === (maxDate)">
+                                            <i class="fas fa-calendar-day"></i>
+                                            اليوم
+                                        </button>
+                                        <button type="button" class="btn btn-sm btn-preset"
+                                            (click)="setDatePreset('yesterday')">
+                                            <i class="fas fa-calendar-minus"></i>
+                                            أمس
+                                        </button>
+                                        <button type="button" class="btn btn-sm btn-preset"
+                                            (click)="setDatePreset('last7days')">
+                                            <i class="fas fa-history"></i>
+                                            آخر 7 أيام
+                                        </button>
+                                        <button type="button" class="btn btn-sm btn-preset"
+                                            (click)="setDatePreset('last30days')">
+                                            <i class="fas fa-history"></i>
+                                            آخر 30 يوم
+                                        </button>
+                                        <button type="button" class="btn btn-sm btn-preset"
+                                            (click)="setDatePreset('thisWeek')">
+                                            <i class="fas fa-calendar-week"></i>
+                                            هذا الأسبوع
+                                        </button>
+                                        <button type="button" class="btn btn-sm btn-preset"
+                                            (click)="setDatePreset('thisMonth')">
+                                            <i class="fas fa-calendar"></i>
+                                            هذا الشهر
+                                        </button>
+                                        <button type="button" class="btn btn-sm btn-preset"
+                                            (click)="setDatePreset('lastMonth')">
+                                            <i class="fas fa-calendar-alt"></i>
+                                            الشهر الماضي
+                                        </button>
+                                    </div>
+                                </div>
+
                                 <div class="row">
                                     <div class="col-12 col-sm-6 col-lg-3">
                                         <div class="form-group">
@@ -267,41 +318,6 @@
                                 </div>
                             </div>
 
-                            <div class="report-type-section">
-                                <h6 class="section-title">
-                                    <i class="fas fa-file-alt text-primary"></i>
-                                    نوع التقرير
-                                    <span class="required-badge">إجباري</span>
-                                </h6>
-                                <div class="row">
-                                    <div class="col-12">
-                                        <div class="form-group">
-                                            <label class="form-label required">
-                                                اختر نوع التقرير
-                                                <span class="required-star">*</span>
-                                            </label>
-                                            <div class="report-type-options">
-                                                <div class="form-check form-check-inline">
-                                                    <input class="form-check-input" type="radio" id="pdfType"
-                                                        [(ngModel)]="reportType" value="pdf" name="reportType" checked>
-                                                    <label class="form-check-label" for="pdfType">
-                                                        <i class="fas fa-file-pdf text-danger"></i>
-                                                        تقرير PDF
-                                                    </label>
-                                                </div>
-                                                <div class="form-check form-check-inline">
-                                                    <input class="form-check-input" type="radio" id="docxType"
-                                                        [(ngModel)]="reportType" value="docx" name="reportType">
-                                                    <label class="form-check-label" for="docxType">
-                                                        <i class="fas fa-file-word text-primary"></i>
-                                                        تقرير DOCX
-                                                    </label>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
 
                             <div *ngIf="dateRequiredError" class="alert alert-danger mt-3">
                                 <i class="fas fa-exclamation-triangle"></i>
@@ -571,7 +587,9 @@
                                                 <th width="60">#</th>
                                                 <th>اسم الملف</th>
                                                 <th>نوع التقرير</th>
-                                                <th width="120">الإجراءات</th>
+                                                <th>تاريخ الانشاء</th>
+                                                <th width="80">الإجراءات</th>
+                                                
                                             </tr>
                                         </thead>
                                         <tbody>
@@ -593,6 +611,9 @@
                                                         [class.badge-docx]="getFileType(pdf) === 'docx'">
                                                         {{ getFileType(pdf) === 'pdf' ? 'PDF' : 'DOCX' }}
                                                     </span>
+                                                </td>
+                                                <td>
+                                                    {{formatDate(pdf.createdAt)}}
                                                 </td>
                                                 <td>
                                                     <div class="action-buttons">

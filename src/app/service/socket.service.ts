@@ -2,6 +2,8 @@ import { Injectable } from '@angular/core';
 import { Observable } from 'rxjs';
 import * as ioClient from 'socket.io-client'; 
 
+import { environment } from '../environments/environments';
+
 export interface Notification {
   id: string;
   title: string;
@@ -17,10 +19,10 @@ export interface Notification {
 })
 export class SocketService {
   private socket: any;
-  private readonly apiUrl = 'http://localhost:3000/api'; 
+  private readonly socketUrl = environment.socketUrl; 
 
   constructor() {
-    this.socket = ioClient.connect(this.apiUrl, {
+    this.socket = ioClient.connect(this.socketUrl, {
       transports: ['websocket', 'polling'],
     });
   }

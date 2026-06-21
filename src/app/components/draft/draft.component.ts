@@ -4,6 +4,8 @@ import { Activity, TableData } from 'src/app/model/achievement';
 import { Router } from '@angular/router';
 import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
 import Swal from 'sweetalert2';
+import { environment } from 'src/app/environments/environments';
+import { cleanRichTextHtml, extractDescriptionParts, getTextFromDescription, getTablesFromDescription, DescriptionPart } from 'src/app/shared/quill-editor.config';
 
 @Component({
   selector: 'app-drafts',
@@ -48,24 +50,24 @@ export class DraftsComponent implements OnInit {
   }
 
   // ==== وظائف عرض الوصف ====
-  getSafeDescription(description: string): SafeHtml {
-    if (!description) {
+  getSafeDescription(description: string | string[]): SafeHtml {
+    const text = getTextFromDescription(description);
+    if (!text || !text.trim()) {
       return this.sanitizer.bypassSecurityTrustHtml('لا يوجد وصف');
     }
-    return this.sanitizer.bypassSecurityTrustHtml(description);
+    return this.sanitizer.bypassSecurityTrustHtml(text);
   }
 
-  getPlainTextDescription(description: string): string {
-    if (!description) return 'لا يوجد وصف';
-
+  getPlainTextDescription(description: string | string[]): string {
+    const text = getTextFromDescription(description);
+    if (!text || !text.trim()) return 'لا يوجد وصف';
     const tempDiv = document.createElement('div');
-    tempDiv.innerHTML = description;
-    const text = tempDiv.textContent || tempDiv.innerText || '';
-
-    return text.length > 150 ? text.substring(0, 150) + '...' : text;
+    tempDiv.innerHTML = text;
+    const plain = tempDiv.textContent || tempDiv.innerText || '';
+    return plain.length > 150 ? plain.substring(0, 150) + '...' : plain;
   }
 
-  hasLongDescription(description: string): boolean {
+  hasLongDescription(description: string | string[]): boolean {
     if (!description) return false;
     const text = this.getPlainTextDescription(description);
     return text.length > 150;
@@ -73,6 +75,18 @@ export class DraftsComponent implements OnInit {
 
   toggleDescription(id: string): void {
     this.isExpanded[id] = !this.isExpanded[id];
+  }
+
+  getDescriptionParts(description: string | string[]): DescriptionPart[] {
+    return extractDescriptionParts(description);
+  }
+
+  getTableParts(description: string | string[]): string[] {
+    return getTablesFromDescription(description);
+  }
+
+  getTableSafeHtml(tableHtml: string): SafeHtml {
+    return this.sanitizer.bypassSecurityTrustHtml(tableHtml);
   }
 
   // ==== وظائف الجداول ====
@@ -148,18 +162,23 @@ export class DraftsComponent implements OnInit {
   }
 
   // ==== وظائف المساعدة ====
-  getCleanDescription(description: string): string {
-    if (!description) return 'لا يوجد وصف';
+  getCleanDescription(description: string | string[]): string {
+    const text = getTextFromDescription(description);
+    if (!text || !text.trim()) return 'لا يوجد وصف';
 
-    if (description.includes('<') && description.includes('>')) {
-      return this.stripHtmlTags(description);
+    if (text.includes('<') && text.includes('>')) {
+      return this.stripHtmlTags(text);
     }
 
-    if (description.includes('[{') && description.includes('rows') && description.includes('cols')) {
-      return 'هذا الوصف يحتوي على جداول متضمنة. يمكن عرضها في قسم الجداول.';
-    }
+    return text.length > 200 ? text.substring(0, 200) + '...' : text;
+  }
 
-    return description.length > 200 ? description.substring(0, 200) + '...' : description;
+  getRichDescription(description: string | string[]): SafeHtml {
+    const text = getTextFromDescription(description);
+    const fallback = this.getCleanDescription(text);
+    return this.sanitizer.bypassSecurityTrustHtml(
+      cleanRichTextHtml(text || fallback)
+    );
   }
 
   private stripHtmlTags(html: string): string {
@@ -217,9 +236,9 @@ export class DraftsComponent implements OnInit {
     if (attachment.startsWith('http')) {
       return attachment;
     } else if (attachment.startsWith('/')) {
-      return `http://localhost:3000${attachment}`;
+      return environment.baseUrl + attachment;
     } else {
-      return `http://localhost:3000/uploads/${attachment}`;
+      return environment.baseUrl + '/uploads/' + attachment;
     }
   }
 

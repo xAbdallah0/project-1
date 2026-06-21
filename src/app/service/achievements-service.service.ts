@@ -3,6 +3,8 @@ import { HttpClient, HttpHeaders, HttpParams } from '@angular/common/http';
 import { Observable, tap, throwError, catchError } from 'rxjs';
 import { Activity } from '../model/achievement';
 
+import { environment } from '../environments/environments';
+
 export interface PDFFile {
   _id?: string;
   pdfurl: string;
@@ -44,7 +46,7 @@ export interface ReportGenerationResponse {
   providedIn: 'root',
 })
 export class ActivityService {
-  private readonly API_BASE_URL = 'http://localhost:3000/api/activity';
+  private readonly API_BASE_URL = environment.apiUrl + '/activity';
 
   constructor(private http: HttpClient) {}
 
@@ -121,6 +123,21 @@ export class ActivityService {
       .pipe(
         catchError((error) => {
           console.error('Delete PDF Error:', error);
+          return throwError(() => error);
+        })
+      );
+  }
+  deletereports(
+    id: string
+  ): Observable<{ success: boolean; message: string }> {
+    return this.http
+      .delete<{ success: boolean; message: string }>(
+        `${this.API_BASE_URL}/delete-pdf/${id}`,
+        { headers: this.getAuthHeaders() }
+      )
+      .pipe(
+        catchError((error) => {
+          console.error('Delete Report File Error:', error);
           return throwError(() => error);
         })
       );
@@ -757,7 +774,7 @@ generateTestingPDF(activityData: any): Observable<any> {
 
 
    printTestingPdfFromData(data: any): Observable<any> {
-    return this.http.post(`http://localhost:3000/api/activities/generate-testing-pdf`, data);
+    return this.http.post(environment.apiUrl + '/activities/generate-testing-pdf', data);
   }
 
   // دالة جلب PDF للعرض
@@ -767,7 +784,7 @@ generateTestingPDF(activityData: any): Observable<any> {
 
   // دالة تنزيل PDF
   DownloadPDF(filename: string, downloadName?: string): void {
-    const downloadUrl = `http://localhost:3000/api/activities/download-pdf/${encodeURIComponent(filename)}`;
+    const downloadUrl = environment.apiUrl + '/activities/download-pdf/' + encodeURIComponent(filename);
 
     this.http.get(downloadUrl, { responseType: 'blob' }).subscribe({
       next: (blob: Blob) => {

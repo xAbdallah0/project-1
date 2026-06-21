@@ -50,7 +50,13 @@
                   "maximumError": "100kb"
                 }
               ],
-              "outputHashing": "all"
+              "outputHashing": "all",
+              "fileReplacements": [
+                {
+                  "replace": "src/app/environments/environments.ts",
+                  "with": "src/app/environments/environments.pord.ts"
+                }
+              ]
             },
             "development": {
               "buildOptimizer": false,

@@ -98,18 +98,22 @@
 
             <!-- قسم الجداول المضافة -->
             <div class="mb-4" *ngIf="tablesArray.length > 0">
-              <h6 class="text-primary mb-3">
-                <i class="fa fa-table me-2"></i>
-                الجداول المضافة
-              </h6>
+              <div class="section-header mb-3">
+                <h6 class="text-primary fw-bold mb-0">
+                  <i class="fa fa-table me-2"></i>
+                  جداول الوصف
+                  <span class="badge bg-primary ms-2">{{ tablesArray.length }}</span>
+                </h6>
+              </div>
 
-              <div class="row">
+              <div class="row g-3">
                 <div class="col-12" *ngFor="let table of tablesArray; let i = index">
-                  <div class="card mb-3 border">
-                    <div class="card-header d-flex justify-content-between align-items-center bg-light">
-                      <h6 class="mb-0">
+                  <div class="table-preview-card border rounded-2 p-3 mb-2">
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                      <h6 class="text-dark fw-bold mb-0">
+                        <i class="fa fa-table me-2 text-primary"></i>
                         جدول {{ i + 1 }}
-                        <span class="badge bg-info ms-2">{{ table.rows }} × {{ table.cols }}</span>
+                        <span class="badge bg-info ms-2 fs-7">{{ table.rows }} × {{ table.cols }}</span>
                       </h6>
                       <div class="btn-group btn-group-sm" role="group">
                         <button type="button" class="btn btn-outline-primary"
@@ -126,22 +130,8 @@
                         </button>
                       </div>
                     </div>
-                    <div class="card-body p-0">
-                      <!-- عرض الجدول -->
-                      <div class="table-container" *ngIf="table.data && table.data.length > 0">
-                        <div class="table-responsive">
-                          <table class="table table-bordered mb-0">
-                            <tbody>
-                              <tr *ngFor="let row of table.data; let rowIndex = index">
-                                <td *ngFor="let cell of row; let colIndex = index"
-                                    class="p-2 border" style="min-width: 120px;">
-                                  {{ cell || '&nbsp;' }}
-                                </td>
-                              </tr>
-                            </tbody>
-                          </table>
-                        </div>
-                      </div>
+                    <div class="table-responsive rich-text-content" style="max-height: 300px; overflow-y: auto;"
+                         [innerHTML]="getTableContent(i)">
                     </div>
                   </div>
                 </div>

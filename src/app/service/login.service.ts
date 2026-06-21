@@ -10,6 +10,8 @@ import {
   DecodedToken,
 } from '../model/user';
 
+import { environment } from '../environments/environments';
+
 @Injectable({
   providedIn: 'root',
 })
@@ -17,7 +19,7 @@ export class LoginService {
   private readonly userKey = 'userData';
   private readonly tokenKey = 'token';
   private readonly roleKey = 'userRole';
-  private readonly apiUrl = 'http://localhost:3000/api';
+  private readonly apiUrl = environment.apiUrl;
 
   private userBehaviorSubject = new BehaviorSubject<User | null>(
     this.getUserFromLocalStorage()

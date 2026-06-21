@@ -3,6 +3,8 @@ import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { LoginService } from './login.service';
 
+import { environment } from '../environments/environments';
+
 export interface MainCriteria {
   _id: string;
   name: string;
@@ -67,8 +69,8 @@ export interface AddSubCriteriaRequest {
   providedIn: 'root',
 })
 export class CriteriaService {
-  private apiUrl = 'http://localhost:3000/api/criteria';
-  private usersUrl = 'http://localhost:3000/api/users';
+  private apiUrl = environment.apiUrl + '/criteria';
+  private usersUrl = environment.apiUrl + '/users';
 
   constructor(private http: HttpClient, private loginService: LoginService) {}
 

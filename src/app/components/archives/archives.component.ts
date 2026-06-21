@@ -3,6 +3,8 @@ import { ActivityService } from '../../service/achievements-service.service';
 import { Activity } from 'src/app/model/achievement';
 import Swal from 'sweetalert2';
 import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
+import { extractDescriptionParts, getTextFromDescription, getTablesFromDescription, DescriptionPart, cleanRichTextHtml } from 'src/app/shared/quill-editor.config';
+import { environment } from 'src/app/environments/environments';
 
 @Component({
   selector: 'app-archived-activities',
@@ -43,16 +45,28 @@ export class ArchivedActivitiesComponent implements OnInit {
     });
   }
 
-  getCleanDescription(description: string): SafeHtml {
-    if (!description) return 'لا يوجد وصف';
-    let cleanHtml = description;
-    if (description.includes('<') && description.includes('>')) {
-      cleanHtml = this.cleanHTMLForDisplay(description);
-    } else {
-      cleanHtml = this.formatPlainText(description);
-    }
+  getDescriptionParts(description: string | string[]): DescriptionPart[] {
+    return extractDescriptionParts(description);
+  }
 
+  getCleanDescription(description: string | string[]): SafeHtml {
+    const text = getTextFromDescription(description);
+    if (!text || !text.trim()) return this.sanitizer.bypassSecurityTrustHtml('لا يوجد وصف');
+    let cleanHtml = text;
+    if (text.includes('<') && text.includes('>')) {
+      cleanHtml = this.cleanHTMLForDisplay(text);
+    } else {
+      cleanHtml = this.formatPlainText(text);
+    }
     return this.sanitizer.bypassSecurityTrustHtml(cleanHtml);
+  }
+
+  getTableParts(description: string | string[]): string[] {
+    return getTablesFromDescription(description);
+  }
+
+  getTableSafeHtml(tableHtml: string): SafeHtml {
+    return this.sanitizer.bypassSecurityTrustHtml(tableHtml);
   }
 
   private cleanHTMLForDisplay(html: string): string {
@@ -111,7 +125,7 @@ export class ArchivedActivitiesComponent implements OnInit {
   getFullAttachmentUrl(attachment: string): string {
     return attachment.startsWith('http')
       ? attachment
-      : `http://localhost:3000${attachment}`;
+      : environment.baseUrl + attachment;
   }
 
   openImageModal(attachment: string): void {

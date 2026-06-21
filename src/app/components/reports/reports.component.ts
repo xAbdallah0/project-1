@@ -773,7 +773,7 @@ export class ReportsComponent implements OnInit, OnDestroy {
       return;
     }
 
-    this.activityService.deletereportfiles(pdf._id).subscribe({
+    this.activityService.deletereports(pdf._id).subscribe({
       next: (response) => {
         if (response.success) {
           this.showSuccess('تم حذف التقرير بنجاح');
@@ -857,7 +857,7 @@ export class ReportsComponent implements OnInit, OnDestroy {
 
     oldReports.forEach((pdf) => {
       if (pdf._id) {
-        this.activityService.deletereportfiles(pdf._id).subscribe({
+        this.activityService.deletereports(pdf._id).subscribe({
           next: (response) => {
             if (response.success) {
               deletedCount++;
@@ -892,17 +892,74 @@ export class ReportsComponent implements OnInit, OnDestroy {
     return this.activityService.extractFilenameFromUrl(url);
   }
 
-  formatDate(dateString: string): string {
-    if (!dateString) return '-';
+  formatDate(dateString: any): string {
+    // Handle null, undefined, empty string
+    if (!dateString || dateString === '' || dateString === 'undefined' || dateString === 'null') {
+      return 'غير محدد';
+    }
+    
     try {
-      const date = new Date(dateString);
+      let date: Date;
+      
+      // Handle YYYY-MM-DD format (date input)
+      if (typeof dateString === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(dateString.trim())) {
+        const parts = dateString.split('-');
+        const year = parseInt(parts[0], 10);
+        const month = parseInt(parts[1], 10) - 1;
+        const day = parseInt(parts[2], 10);
+        
+        if (isNaN(year) || isNaN(month) || isNaN(day)) {
+          return 'غير محدد';
+        }
+        
+        // Create date in local timezone (no UTC offset issues)
+        date = new Date(year, month, day, 12, 0, 0);
+      } else {
+        // Handle ISO string or other formats
+        date = new Date(dateString);
+      }
+      
+      // Validate date
+      if (isNaN(date.getTime())) {
+        return 'غير محدد';
+      }
+      
       return date.toLocaleDateString('ar-EG', {
         year: 'numeric',
         month: 'long',
         day: 'numeric',
       });
+    } catch (e) {
+      console.error('Date formatting error:', e);
+      return 'غير محدد';
+    }
+  }
+
+  formatDateTime(dateString: string | undefined): string {
+    if (!dateString) return '-';
+    try {
+      // Handle YYYY-MM-DD format
+      const parts = dateString.split('-');
+      let date: Date;
+      
+      if (parts.length === 3 && dateString.includes('-')) {
+        const year = parseInt(parts[0]);
+        const month = parseInt(parts[1]) - 1;
+        const day = parseInt(parts[2]);
+        date = new Date(year, month, day);
+      } else {
+        date = new Date(dateString);
+      }
+      
+      return date.toLocaleDateString('ar-EG', {
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit',
+      });
     } catch {
-      return dateString;
+      return dateString || '-';
     }
   }
 
@@ -1072,5 +1129,82 @@ export class ReportsComponent implements OnInit, OnDestroy {
       this.getSelectedItemsCount('mainCriteria') +
       this.getSelectedItemsCount('subCriteria')
     );
+  }
+
+  // ===== Current Date Display =====
+  get currentDateDisplay(): string {
+    const now = new Date();
+    return now.toLocaleDateString('ar-EG', {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    });
+  }
+
+  // ===== Date Presets =====
+  setDatePreset(preset: string): void {
+    const today = new Date();
+    today.setHours(23, 59, 59, 999);
+    const startOfToday = new Date();
+    startOfToday.setHours(0, 0, 0, 0);
+
+    switch (preset) {
+      case 'today':
+        this.filters.startDate = this.formatDateToInput(startOfToday);
+        this.filters.endDate = this.formatDateToInput(today);
+        break;
+      case 'yesterday':
+        const yesterday = new Date(today);
+        yesterday.setDate(yesterday.getDate() - 1);
+        yesterday.setHours(0, 0, 0, 0);
+        const yesterdayEnd = new Date(yesterday);
+        yesterdayEnd.setHours(23, 59, 59, 999);
+        this.filters.startDate = this.formatDateToInput(yesterday);
+        this.filters.endDate = this.formatDateToInput(yesterdayEnd);
+        break;
+      case 'last7days':
+        const last7Days = new Date(startOfToday);
+        last7Days.setDate(last7Days.getDate() - 6);
+        this.filters.startDate = this.formatDateToInput(last7Days);
+        this.filters.endDate = this.formatDateToInput(today);
+        break;
+      case 'last30days':
+        const last30Days = new Date(startOfToday);
+        last30Days.setDate(last30Days.getDate() - 29);
+        this.filters.startDate = this.formatDateToInput(last30Days);
+        this.filters.endDate = this.formatDateToInput(today);
+        break;
+      case 'thisWeek':
+        const dayOfWeek = startOfToday.getDay();
+        const diffToSunday = dayOfWeek === 0 ? 0 : dayOfWeek;
+        const sunday = new Date(startOfToday);
+        sunday.setDate(sunday.getDate() - diffToSunday);
+        this.filters.startDate = this.formatDateToInput(sunday);
+        this.filters.endDate = this.formatDateToInput(today);
+        break;
+      case 'thisMonth':
+        const firstOfMonth = new Date(startOfToday.getFullYear(), startOfToday.getMonth(), 1);
+        this.filters.startDate = this.formatDateToInput(firstOfMonth);
+        this.filters.endDate = this.formatDateToInput(today);
+        break;
+      case 'lastMonth':
+        const lastMonthDate = new Date(startOfToday.getFullYear(), startOfToday.getMonth() - 1, 1);
+        const lastMonthEnd = new Date(startOfToday.getFullYear(), startOfToday.getMonth(), 0);
+        lastMonthEnd.setHours(23, 59, 59, 999);
+        this.filters.startDate = this.formatDateToInput(lastMonthDate);
+        this.filters.endDate = this.formatDateToInput(lastMonthEnd);
+        break;
+    }
+    this.dateRequiredError = false;
+    this.showDateError = false;
+  }
+
+  private formatDateToInput(date: Date): string {
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
   }
 }
