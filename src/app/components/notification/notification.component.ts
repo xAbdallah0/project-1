@@ -3,6 +3,8 @@ import { NotificationService } from 'src/app/service/notification.service';
 import { Notification } from 'src/app/model/notification';
 import { ToastrService } from 'ngx-toastr';
 import { Subscription } from 'rxjs';
+import { io, Socket } from 'socket.io-client';
+import { environment } from 'src/app/environments/environments';
 
 @Component({
   selector: 'app-notification',
@@ -18,6 +20,7 @@ export class NotificationComponent implements OnInit, OnDestroy {
   unreadCount = 0;
 
   private notificationsSubscription!: Subscription;
+  private socket!: Socket;
 
   constructor(
     private notificationService: NotificationService,
@@ -27,17 +30,68 @@ export class NotificationComponent implements OnInit, OnDestroy {
   ngOnInit(): void {
     this.loadNotifications();
     this.notificationService.fetchNotificationsFromServer();
+    this.connectSocket();
   }
 
   ngOnDestroy(): void {
     if (this.notificationsSubscription) {
       this.notificationsSubscription.unsubscribe();
     }
+    if (this.socket) {
+      this.socket.disconnect();
+    }
+  }
+
+  connectSocket(): void {
+    // ✅ socketUrl مش apiUrl — ده كان سبب Invalid namespace
+    this.socket = io(environment.socketUrl, {
+      transports: ['websocket', 'polling'],
+      withCredentials: true,
+    });
+
+    this.socket.on('connect', () => {
+      console.log('✅ Socket connected:', this.socket.id);
+
+      // ✅ registerUser جوه connect عشان الـ socket يكون جاهز
+      const userData = localStorage.getItem('user');
+      if (userData) {
+        try {
+          const user = JSON.parse(userData);
+          if (user._id) {
+            this.socket.emit('registerUser', user._id);
+            console.log('✅ Registered user room:', user._id);
+          }
+        } catch (e) {
+          console.error('خطأ في قراءة بيانات المستخدم:', e);
+        }
+      }
+    });
+
+    this.socket.on('newNotification', (notification: Notification) => {
+      console.log('🔔 New notification received:', notification);
+      const exists = this.notifications.some((n) => n._id === notification._id);
+      if (!exists) {
+        this.notifications = [notification, ...this.notifications];
+        this.updateFilteredNotifications();
+        this.updateUnreadCount();
+        this.toastr.info(notification.message, 'إشعار جديد', {
+          timeOut: 4000,
+          positionClass: 'toast-top-right',
+        });
+      }
+    });
+
+    this.socket.on('disconnect', () => {
+      console.log('❌ Socket disconnected');
+    });
+
+    this.socket.on('connect_error', (err: any) => {
+      console.error('Socket connection error:', err.message);
+    });
   }
 
   loadNotifications(): void {
     this.isLoading = true;
-    
     this.notificationsSubscription = this.notificationService.notifications$.subscribe({
       next: (data) => {
         this.notifications = data;
@@ -93,15 +147,10 @@ export class NotificationComponent implements OnInit, OnDestroy {
         }
         this.notificationService.deleteNotification(_id).subscribe({
           next: () => {
-            this.notifications = this.notifications.filter(
-              (n) => n._id !== _id
-            );
+            this.notifications = this.notifications.filter((n) => n._id !== _id);
             this.updateUnreadCount();
             this.updateFilteredNotifications();
-            this.toastr.success(
-              'تم تعليم الإشعار كمقروء وحذفه بنجاح',
-              'تم بنجاح'
-            );
+            this.toastr.success('تم تعليم الإشعار كمقروء وحذفه بنجاح', 'تم بنجاح');
           },
           error: (err) => {
             console.error('خطأ أثناء حذف الإشعار:', err);
@@ -124,10 +173,7 @@ export class NotificationComponent implements OnInit, OnDestroy {
             this.notifications = [];
             this.updateUnreadCount();
             this.updateFilteredNotifications();
-            this.toastr.success(
-              'تم تعليم جميع الإشعارات كمقروءة وحذفها جميعاً',
-              'تم بنجاح'
-            );
+            this.toastr.success('تم تعليم جميع الإشعارات كمقروءة وحذفها جميعاً', 'تم بنجاح');
           },
           error: (err) => {
             console.error('خطأ أثناء حذف جميع الإشعارات:', err);
@@ -161,8 +207,7 @@ export class NotificationComponent implements OnInit, OnDestroy {
   }
 
   getNotificationIcon(type: string): string {
-    const icons: any = {
-    };
+    const icons: any = {};
     return icons[type] || '🔔';
   }
 
@@ -171,7 +216,6 @@ export class NotificationComponent implements OnInit, OnDestroy {
     const now = new Date().getTime();
     const time = new Date(timestamp).getTime();
     const diff = Math.floor((now - time) / 1000);
-
     if (diff < 60) return 'الآن';
     if (diff < 3600) return `${Math.floor(diff / 60)} د`;
     if (diff < 86400) return `${Math.floor(diff / 3600)} س`;

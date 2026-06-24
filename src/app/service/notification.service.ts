@@ -3,7 +3,6 @@ import { BehaviorSubject } from 'rxjs';
 import { io, Socket } from 'socket.io-client';
 import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { Notification } from '../model/notification';
-
 import { environment } from '../environments/environments';
 
 @Injectable({
@@ -31,27 +30,39 @@ export class NotificationService {
       transports: ['websocket', 'polling'],
     });
 
-    const userData = localStorage.getItem('user');
-    if (userData) {
-      const user = JSON.parse(userData);
-      if (user._id) {
-        this.socket.emit('registerUser', user._id);
-        console.log('Registered user room:', user._id);
-      }
-    }
-
-    this.socket.on('notification', (notification: Notification) => {
-      this.addNotification(notification);
-      this.showBrowserNotification(notification.title, notification.message);
-    });
-
+    // ✅ registerUser بعد الـ connect مباشرة عشان نضمن إن الـ socket جاهز
     this.socket.on('connect', () => {
-      console.log('Connected to Socket.IO server');
+      console.log('✅ Connected to Socket.IO server:', this.socket.id);
+
+      const userData = localStorage.getItem('user');
+      if (userData) {
+        try {
+          const user = JSON.parse(userData);
+          if (user._id) {
+            this.socket.emit('registerUser', user._id);
+            console.log('✅ Registered user room:', user._id);
+          }
+        } catch (e) {
+          console.error('خطأ في قراءة بيانات المستخدم:', e);
+        }
+      }
+
       this.fetchNotificationsFromServer();
     });
 
+    // ✅ المشكلة الأساسية كانت هنا — الباك بيبعت 'newNotification' مش 'notification'
+    this.socket.on('newNotification', (notification: Notification) => {
+      console.log('🔔 newNotification received:', notification);
+      this.addNotification(notification);
+      this.showBrowserNotification('إشعار جديد', notification.message);
+    });
+
     this.socket.on('disconnect', () => {
-      console.log('Disconnected from Socket.IO server');
+      console.log('❌ Disconnected from Socket.IO server');
+    });
+
+    this.socket.on('connect_error', (err: any) => {
+      console.error('Socket connection error:', err.message);
     });
   }
 
@@ -69,9 +80,13 @@ export class NotificationService {
         headers: this.getAuthHeaders(),
       })
       .subscribe({
-        next: (data) => {
-          console.log('Fetched notifications:', data);
-          this.notificationsSubject.next(data);
+        next: (data: any) => {
+          // ✅ الباك ممكن يرجع { notifications: [...] } أو array مباشرة
+          const notifications = Array.isArray(data)
+            ? data
+            : data.notifications ?? [];
+          console.log('Fetched notifications:', notifications);
+          this.notificationsSubject.next(notifications);
         },
         error: (err) => console.error('Error fetching notifications:', err),
       });
@@ -93,9 +108,12 @@ export class NotificationService {
   }
 
   addNotification(notification: Notification): void {
-    const currentNotifications = this.notificationsSubject.value;
-    const updated = [notification, ...currentNotifications];
-    this.notificationsSubject.next(updated);
+    const current = this.notificationsSubject.value;
+    // ✅ تجنب التكرار
+    const exists = current.some((n) => n._id === notification._id);
+    if (!exists) {
+      this.notificationsSubject.next([notification, ...current]);
+    }
   }
 
   markAsRead(notificationId: string) {
@@ -110,9 +128,7 @@ export class NotificationService {
     return this.http.put(
       `${this.API_URL}/markAllRead`,
       {},
-      {
-        headers: this.getAuthHeaders(),
-      }
+      { headers: this.getAuthHeaders() }
     );
   }
 
@@ -132,9 +148,7 @@ export class NotificationService {
     return this.http.post<Notification>(
       `${this.API_URL}/test`,
       {},
-      {
-        headers: this.getAuthHeaders(),
-      }
+      { headers: this.getAuthHeaders() }
     );
   }
 

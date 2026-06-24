@@ -75,7 +75,6 @@ export class AddAchievementComponent implements OnInit {
     '36px', '40px', '48px', '56px', '72px',
   ];
 
-  // ==================== أسماء العرض للخطوط في الـ dropdown ====================
   private readonly fontDisplayNames: { [key: string]: string } = {
     'cairo': 'Cairo',
     'tajawal': 'Tajawal',
@@ -128,44 +127,29 @@ export class AddAchievementComponent implements OnInit {
 
   // ==================== إعدادات الـ Quill المخصصة ====================
 
-  /**
-   * تسجيل الـ formats المخصصة للخطوط والأحجام
-   * - الخطوط: نستخدم class-based attributor ليعمل مع الـ CSS الموجود
-   * - الأحجام: نستخدم style-based attributor لدعم قيم البكسل المخصصة
-   */
   private setupQuillFormats(): void {
     try { registerQuillFormats(); } catch (e) { /* ignore */ }
 
-    // تسجيل الخطوط (class-based) مع الـ whitelist الخاص بنا
     const FontAttributor: any = Quill.import('attributors/class/font');
     if (FontAttributor) {
       FontAttributor.whitelist = this.fontWhitelist.filter((f) => f !== '');
       Quill.register(FontAttributor, true);
     }
 
-    // تسجيل الأحجام (style-based) لدعم قيم مثل 14px, 16px
-    // هذا هو الحل الأساسي لمشكلة ظهور "normal" متكررة
     const SizeAttributor: any = Quill.import('attributors/style/size');
     if (SizeAttributor) {
       SizeAttributor.whitelist = this.sizeWhitelist;
       Quill.register(SizeAttributor, true);
     }
   }
-  /**
-   * تعديل الـ labels في الـ dropdown الخاص بالخطوط والأحجام
-   * بعد إنشاء الـ editor مباشرة
-   */
+
   private fixToolbarLabels(): void {
     const sizeLabels: { [key: string]: string } = {};
     this.sizeWhitelist.forEach((s) => (sizeLabels[s] = s));
-
     this.fixPickerLabels('font', this.fontDisplayNames, 'الخط');
     this.fixPickerLabels('size', sizeLabels, 'الحجم');
   }
 
-  /**
-   * تعديل labels لأي picker في الـ toolbar
-   */
   private fixPickerLabels(
     pickerType: string,
     labels: { [key: string]: string },
@@ -182,34 +166,20 @@ export class AddAchievementComponent implements OnInit {
       item.setAttribute('data-label', label);
     });
 
-    const labelSpan = picker.querySelector(
-      '.ql-picker-label span'
-    ) as HTMLElement;
-    if (labelSpan) {
-      labelSpan.textContent = defaultLabel;
-    }
+    const labelSpan = picker.querySelector('.ql-picker-label span') as HTMLElement;
+    if (labelSpan) labelSpan.textContent = defaultLabel;
 
     const observer = new MutationObserver(() => {
-      const selected = picker.querySelector(
-        '.ql-picker-item.ql-selected'
-      ) as HTMLElement;
-      const span = picker.querySelector(
-        '.ql-picker-label span'
-      ) as HTMLElement;
+      const selected = picker.querySelector('.ql-picker-item.ql-selected') as HTMLElement;
+      const span = picker.querySelector('.ql-picker-label span') as HTMLElement;
       if (span) {
         span.textContent = selected
-          ? selected.getAttribute('data-label') ||
-            selected.getAttribute('data-value') ||
-            defaultLabel
+          ? selected.getAttribute('data-label') || selected.getAttribute('data-value') || defaultLabel
           : defaultLabel;
       }
     });
 
-    observer.observe(picker, {
-      subtree: true,
-      attributes: true,
-      attributeFilter: ['class'],
-    });
+    observer.observe(picker, { subtree: true, attributes: true, attributeFilter: ['class'] });
   }
 
   // ==================== نهاية إعدادات الـ Quill المخصصة ====================
@@ -236,9 +206,7 @@ export class AddAchievementComponent implements OnInit {
     this.route.queryParams.subscribe((params) => {
       this.isEditing = params['edit'] === 'true';
       this.draftId = params['draftId'] || '';
-      if (this.isEditing) {
-        this.loadDraftData();
-      }
+      if (this.isEditing) this.loadDraftData();
     });
   }
 
@@ -254,71 +222,52 @@ export class AddAchievementComponent implements OnInit {
     }
   }
 
-populateFormWithDraftData(): void {
-  if (this.originalDraftData && this.form) {
-    this.form.patchValue({
-      activityTitle: this.originalDraftData.activityTitle,
-      MainCriteria: this.originalDraftData.MainCriteria?._id || this.originalDraftData.MainCriteria,
-      SubCriteria: this.originalDraftData.SubCriteria?._id || this.originalDraftData.SubCriteria,
-      name: this.originalDraftData.name,
-    });
-
-    // ✅ جرّب الاتنين: Attachments (capital) أو files (lowercase)
-    const attachments =
-      this.originalDraftData.Attachments ||
-      this.originalDraftData.files ||
-      [];
-
-    if (Array.isArray(attachments) && attachments.length > 0) {
-      this.existingAttachments = [...attachments];
-    } else {
-      this.existingAttachments = [];
-    }
-
-    this.tablesArray = [];
-    let textContent = '';
-    const descData = this.originalDraftData.activityDescription;
-
-    if (Array.isArray(descData)) {
-      descData.forEach((item: string) => {
-        if (item && (item.includes('<table') || item.includes('table-responsive'))) {
-          this.tablesArray.push({
-            html: item,
-            rows: 0,
-            cols: 0,
-            data: [],
-            alignment: 'right',
-            isTable: true
-          });
-        } else if (item && item.trim().length > 0) {
-          textContent += item;
-        }
+  populateFormWithDraftData(): void {
+    if (this.originalDraftData && this.form) {
+      this.form.patchValue({
+        activityTitle: this.originalDraftData.activityTitle,
+        MainCriteria: this.originalDraftData.MainCriteria?._id || this.originalDraftData.MainCriteria,
+        SubCriteria: this.originalDraftData.SubCriteria?._id || this.originalDraftData.SubCriteria,
+        name: this.originalDraftData.name,
       });
-    } else if (typeof descData === 'string') {
-      textContent = descData;
-    }
 
-    this.form.patchValue({
-      activityDescription: this.extractPlainText(textContent),
-    });
+      const attachments = this.originalDraftData.Attachments || this.originalDraftData.files || [];
+      this.existingAttachments = Array.isArray(attachments) && attachments.length > 0 ? [...attachments] : [];
 
-    this.updateTablesFormArray();
+      this.tablesArray = [];
+      let textContent = '';
+      const descData = this.originalDraftData.activityDescription;
 
-    if (this.descriptionEditor) {
-      setTimeout(() => {
-        if (this.descriptionEditor.quillEditor) {
-          this.descriptionEditor.quillEditor.root.innerHTML = textContent || '';
-        }
-      }, 100);
-    }
+      if (Array.isArray(descData)) {
+        descData.forEach((item: string) => {
+          if (item && (item.includes('<table') || item.includes('table-responsive'))) {
+            this.tablesArray.push({ html: item, rows: 0, cols: 0, data: [], alignment: 'right', isTable: true });
+          } else if (item && item.trim().length > 0) {
+            textContent += item;
+          }
+        });
+      } else if (typeof descData === 'string') {
+        textContent = descData;
+      }
 
-    const mainCriteriaId = this.originalDraftData.MainCriteria?._id || this.originalDraftData.MainCriteria;
-    if (mainCriteriaId) {
-      this.selectedMain = mainCriteriaId;
-      this.getSubCriteria(mainCriteriaId);
+      this.form.patchValue({ activityDescription: this.extractPlainText(textContent) });
+      this.updateTablesFormArray();
+
+      if (this.descriptionEditor) {
+        setTimeout(() => {
+          if (this.descriptionEditor.quillEditor) {
+            this.descriptionEditor.quillEditor.root.innerHTML = textContent || '';
+          }
+        }, 100);
+      }
+
+      const mainCriteriaId = this.originalDraftData.MainCriteria?._id || this.originalDraftData.MainCriteria;
+      if (mainCriteriaId) {
+        this.selectedMain = mainCriteriaId;
+        this.getSubCriteria(mainCriteriaId);
+      }
     }
   }
-}
 
   initializeForm(): void {
     this.form = this.fb.group(
@@ -355,11 +304,8 @@ populateFormWithDraftData(): void {
     const target = event.target as HTMLSelectElement | null;
     this.selectedMain = target?.value ?? '';
     this.form.patchValue({ SubCriteria: '' });
-    if (this.selectedMain) {
-      this.getSubCriteria(this.selectedMain);
-    } else {
-      this.subCriteria = [];
-    }
+    if (this.selectedMain) this.getSubCriteria(this.selectedMain);
+    else this.subCriteria = [];
   }
 
   getSubCriteria(mainId: string): void {
@@ -383,7 +329,6 @@ populateFormWithDraftData(): void {
   onEditorCreated(editor: any): void {
     editor.format('direction', 'rtl');
     editor.format('align', 'right');
-    // ننتظر شوية حتى الـ DOM بتاع الـ toolbar يكتمل
     setTimeout(() => this.fixToolbarLabels(), 500);
   }
 
@@ -402,9 +347,11 @@ populateFormWithDraftData(): void {
 
   private cleanText(text: string): string {
     if (!text) return '';
-    return text.replace(/[\r\n\t\u00A0\u1680\u180E\u2000-\u200B\u202F\u205F\u3000\uFEFF]+/g, ' ')
+    return text
+      .replace(/[\r\n\t\u00A0\u1680\u180E\u2000-\u200B\u202F\u205F\u3000\uFEFF]+/g, ' ')
       .replace(/\s+/g, ' ').replace(/^\s+/, '').replace(/\s+$/, '').normalize('NFKC')
-      .replace(/[^\u0600-\u06FF\u0750-\u077F\u08A0-\u08FF\uFB50-\uFDFF\uFE70-\uFEFF\u0020-\u007E\u00A0-\u00FF\u0100-\u017F\u0180-\u024F\u1E00-\u1EFF]/g, '').trim();
+      .replace(/[^\u0600-\u06FF\u0750-\u077F\u08A0-\u08FF\uFB50-\uFDFF\uFE70-\uFEFF\u0020-\u007E\u00A0-\u00FF\u0100-\u017F\u0180-\u024F\u1E00-\u1EFF]/g, '')
+      .trim();
   }
 
   getDescriptionLength(): number {
@@ -515,7 +462,6 @@ populateFormWithDraftData(): void {
   getTableContent(index: number): any {
     const tableData = this.getExistingTable(index);
     if (!tableData) return this.tablesArray[index]?.html || '';
-
     if (!tableData.data || tableData.data.length === 0) {
       return this.sanitizer.bypassSecurityTrustHtml(tableData.html || '');
     }
@@ -539,9 +485,7 @@ populateFormWithDraftData(): void {
     Swal.fire({ title: `الجدول ${index + 1}`, html: html, width: '90%', confirmButtonText: 'حسناً', showCloseButton: true });
   }
 
-  editTable(index: number): void {
-    this.openTableModal(index);
-  }
+  editTable(index: number): void { this.openTableModal(index); }
 
   removeTable(index: number): void {
     Swal.fire({
@@ -565,21 +509,34 @@ populateFormWithDraftData(): void {
   }
 
   trackFocus(rowIndex: number, colIndex: number): void { this.lastFocusedCell = { row: rowIndex, col: colIndex }; }
+
   restoreFocus(): void {
     if (this.lastFocusedCell) document.getElementById(`cell-${this.lastFocusedCell.row}-${this.lastFocusedCell.col}`)?.focus();
     else this.focusFirstCell();
   }
+
   focusFirstCell(): void { document.getElementById('cell-0-0')?.focus(); }
-  closeTableModal(): void { this.showTableModal = false; this.editingTableIndex = null; this.lastFocusedCell = null; this.resetTableModal(); }
+
+  closeTableModal(): void {
+    this.showTableModal = false;
+    this.editingTableIndex = null;
+    this.lastFocusedCell = null;
+    this.resetTableModal();
+  }
+
   trackByRow(index: number, row: any[]): any { return index; }
   trackByCell(index: number, cell: any): any { return index; }
   trackByIndex(index: number): number { return index; }
 
   // ==================== وظائف PDF ====================
+
   generateTestingPdf(): void {
     if (this.form.invalid) { this.showValidationErrors(); return; }
     this.pdfGenerating = true;
+
+    // ✅ تجميع المحتوى الكامل: النص + الجداول مدموجين معاً
     const fullContent = this.prepareFullContentForPDF();
+
     const activityData = {
       activityTitle: this.form.get('activityTitle')?.value,
       activityDescription: fullContent,
@@ -589,8 +546,9 @@ populateFormWithDraftData(): void {
       name: this.form.get('name')?.value || localStorage.getItem('fullname') || '',
       date: new Date().toISOString(),
       attachments: [...this.existingAttachments],
-      tables: this.tablesArray
+      tables: this.tablesArray, // ✅ نبعت الجداول كمان كـ array منفصلة للـ backup
     };
+
     this.activityService.generateTestingPDF(activityData).subscribe({
       next: (res) => {
         this.pdfGenerating = false;
@@ -603,20 +561,44 @@ populateFormWithDraftData(): void {
           }
           this.savePdfFilename(filename);
           this.showSuccess('تم إنشاء PDF التجريبي بنجاح');
-        } else { this.showError(res.message || 'حدث خطأ'); }
+        } else {
+          this.showError(res.message || 'حدث خطأ');
+        }
       },
-      error: (err) => { this.pdfGenerating = false; this.showError('فشل إنشاء الـ PDF: ' + err.message); }
+      error: (err) => {
+        this.pdfGenerating = false;
+        this.showError('فشل إنشاء الـ PDF: ' + err.message);
+      }
     });
   }
 
+  // ✅ الدالة المُصلَحة: تدمج النص والجداول في string واحدة
   private prepareFullContentForPDF(): string {
+    // 1. جيب HTML من الـ Quill editor
     let fullContent = '';
-    if (this.descriptionEditor?.quillEditor) fullContent = this.descriptionEditor.quillEditor.root.innerHTML;
-    else fullContent = this.form.get('activityDescription')?.value || '';
+    if (this.descriptionEditor?.quillEditor) {
+      fullContent = this.descriptionEditor.quillEditor.root.innerHTML;
+    } else {
+      fullContent = this.form.get('activityDescription')?.value || '';
+    }
 
-    this.tablesArray.forEach((table, index) => {
-      const tableHtml = table.html || this.generateTableHTML(table.data, table.alignment || 'right');
-    });
+    // 2. تجاهل المحتوى الفارغ من الـ editor
+    const isEditorEmpty =
+      !fullContent ||
+      fullContent === '<p><br></p>' ||
+      fullContent.trim() === '' ||
+      fullContent === '<p></p>';
+
+    if (isEditorEmpty) fullContent = '';
+
+    // 3. ✅ دمج كل الجداول مع المحتوى
+    if (this.tablesArray && this.tablesArray.length > 0) {
+      this.tablesArray.forEach((table) => {
+        const tableHtml = table.html || this.generateTableHTML(table.data, table.alignment || 'right');
+        fullContent += tableHtml;
+      });
+    }
+
     return fullContent;
   }
 
@@ -624,7 +606,9 @@ populateFormWithDraftData(): void {
     if (!this.pdfFilename) { this.showWarning('لا يوجد ملف PDF', 'يرجى الإنشاء أولاً'); return; }
     this.pdfLoading = true;
     let fullFilename = this.pdfFilename;
-    if (!fullFilename.startsWith('testing/') && fullFilename.startsWith('تقرير_انجاز_تجريبي')) fullFilename = `testing/${fullFilename}`;
+    if (!fullFilename.startsWith('testing/') && fullFilename.startsWith('تقرير_انجاز_تجريبي')) {
+      fullFilename = `testing/${fullFilename}`;
+    }
     this.activityService.viewPDF(fullFilename).subscribe({
       next: (blob: Blob) => { this.pdfLoading = false; window.open(URL.createObjectURL(blob), '_blank'); },
       error: () => { this.pdfLoading = false; window.open(environment.baseUrl + '/generated-files/' + fullFilename, '_blank'); }
@@ -634,14 +618,19 @@ populateFormWithDraftData(): void {
   downloadPdf(): void {
     if (!this.pdfFilename) return;
     let fullFilename = this.pdfFilename;
-    if (!fullFilename.startsWith('testing/') && fullFilename.startsWith('تقرير_انجاز_تجريبي')) fullFilename = `testing/${fullFilename}`;
+    if (!fullFilename.startsWith('testing/') && fullFilename.startsWith('تقرير_انجاز_تجريبي')) {
+      fullFilename = `testing/${fullFilename}`;
+    }
     this.activityService.downloadPDF(fullFilename, this.generateDownloadName());
   }
 
   private savePdfFilename(filename: string): void {
     if (filename) {
-      if (!filename.includes('/testing/') && filename.startsWith('تقرير_انجاز_تجريبي')) this.pdfFilename = `testing/${filename}`;
-      else this.pdfFilename = filename;
+      if (!filename.includes('/testing/') && filename.startsWith('تقرير_انجاز_تجريبي')) {
+        this.pdfFilename = `testing/${filename}`;
+      } else {
+        this.pdfFilename = filename;
+      }
       localStorage.setItem('lastPdfFilename', this.pdfFilename);
     }
   }
@@ -652,6 +641,7 @@ populateFormWithDraftData(): void {
   }
 
   // ==================== الحفظ والإرسال ====================
+
   submitForReview() {
     this.markAllFieldsAsTouched();
     if (this.form.invalid) { this.showValidationErrors(); return; }
@@ -669,8 +659,11 @@ populateFormWithDraftData(): void {
     this.activityService.addActivity(payload).subscribe({
       next: (response: any) => {
         Swal.close();
-        if (response?.success) this.showSuccess(saveStatus === 'مسودة' ? 'تم حفظ المسودة' : 'تم الإرسال للمراجعة').then(() => this.cleanupForm());
-        else this.showError(response?.message || 'خطأ أثناء الحفظ.');
+        if (response?.success) {
+          this.showSuccess(saveStatus === 'مسودة' ? 'تم حفظ المسودة' : 'تم الإرسال للمراجعة').then(() => this.cleanupForm());
+        } else {
+          this.showError(response?.message || 'خطأ أثناء الحفظ.');
+        }
       },
       error: (err) => { Swal.close(); this.showError(err?.error?.message || 'خطأ أثناء الحفظ.'); }
     });
@@ -683,59 +676,63 @@ populateFormWithDraftData(): void {
     this.activityService.updateDraftActivity(this.draftId, payload).subscribe({
       next: (response: any) => {
         Swal.close();
-        if (response?.success) this.showSuccess(saveStatus === 'مسودة' ? 'تم تحديث المسودة' : 'تم الإرسال للمراجعة').then(() => { localStorage.removeItem('editingDraft'); this.router.navigate(['/drafts']); });
-        else this.showError(response?.message || 'خطأ أثناء التحديث.');
+        if (response?.success) {
+          this.showSuccess(saveStatus === 'مسودة' ? 'تم تحديث المسودة' : 'تم الإرسال للمراجعة').then(() => {
+            localStorage.removeItem('editingDraft');
+            this.router.navigate(['/drafts']);
+          });
+        } else {
+          this.showError(response?.message || 'خطأ أثناء التحديث.');
+        }
       },
       error: (err) => { Swal.close(); this.showError(err?.error?.message || 'خطأ أثناء التحديث.'); }
     });
   }
 
-private createFormData(status: string, saveStatus: string): FormData {
-  const payload = new FormData();
-  payload.append('activityTitle', this.form.value.activityTitle);
+  private createFormData(status: string, saveStatus: string): FormData {
+    const payload = new FormData();
+    payload.append('activityTitle', this.form.value.activityTitle);
 
-  const descriptionsArray: string[] = [];
+    const descriptionsArray: string[] = [];
 
-  let htmlDescription = '';
-  if (this.descriptionEditor?.quillEditor) {
-    htmlDescription = this.descriptionEditor.quillEditor.root.innerHTML;
+    let htmlDescription = '';
+    if (this.descriptionEditor?.quillEditor) {
+      htmlDescription = this.descriptionEditor.quillEditor.root.innerHTML;
+    }
+
+    const isEditorEmpty =
+      !htmlDescription ||
+      htmlDescription === '<p><br></p>' ||
+      htmlDescription.trim() === '' ||
+      htmlDescription === '<p></p>';
+
+    if (!isEditorEmpty) descriptionsArray.push(htmlDescription);
+
+    if (this.tablesArray && this.tablesArray.length > 0) {
+      this.tablesArray.forEach((table) => {
+        const tableHtml = table.html || this.generateTableHTML(table.data, table.alignment || 'right');
+        descriptionsArray.push(tableHtml);
+      });
+    }
+
+    payload.append('activityDescription', JSON.stringify(descriptionsArray));
+    payload.append('MainCriteria', this.form.value.MainCriteria);
+    payload.append('SubCriteria', this.form.value.SubCriteria);
+    payload.append('status', status);
+    payload.append('SaveStatus', saveStatus);
+
+    const userId = localStorage.getItem('userId');
+    if (userId) payload.append('user', userId);
+
+    payload.append('name', this.form.value.name || localStorage.getItem('fullname') || '');
+
+    this.attachments.forEach((file) => payload.append('Attachments', file, file.name));
+    this.deletedAttachments.forEach((del) => payload.append('deletedAttachments', del));
+
+    if (this.isEditing && this.draftId) payload.append('draftId', this.draftId);
+
+    return payload;
   }
-
-  const isEditorEmpty = !htmlDescription || htmlDescription === '<p><br></p>' || htmlDescription.trim() === '' || htmlDescription === '<p></p>';
-
-  if (!isEditorEmpty) {
-    descriptionsArray.push(htmlDescription);
-  }
-
-  if (this.tablesArray && this.tablesArray.length > 0) {
-    this.tablesArray.forEach((table) => {
-      const tableHtml = table.html || this.generateTableHTML(table.data, table.alignment || 'right');
-      descriptionsArray.push(tableHtml);
-    });
-  }
-
-  payload.append('activityDescription', JSON.stringify(descriptionsArray));
-
-  payload.append('MainCriteria', this.form.value.MainCriteria);
-  payload.append('SubCriteria', this.form.value.SubCriteria);
-  payload.append('status', status);
-  payload.append('SaveStatus', saveStatus);
-
-  const userId = localStorage.getItem('userId');
-  if (userId) payload.append('user', userId);
-
-  payload.append('name', this.form.value.name || localStorage.getItem('fullname') || '');
-
-  // ✅ رفع ملفات جديدة — multer field "Attachments"
-  this.attachments.forEach((file) => payload.append('Attachments', file, file.name));
-
-  // ✅ ابعت المحذوفة للباك عشان يشيلها
-  this.deletedAttachments.forEach((del) => payload.append('deletedAttachments', del));
-
-  if (this.isEditing && this.draftId) payload.append('draftId', this.draftId);
-
-  return payload;
-}
 
   private markAllFieldsAsTouched(): void {
     Object.keys(this.form.controls).forEach((key) => this.form.get(key)?.markAsTouched());
@@ -751,13 +748,17 @@ private createFormData(status: string, saveStatus: string): FormData {
   }
 
   cancel() {
-    Swal.fire({ title: 'تأكيد الإلغاء', icon: 'question', showCancelButton: true, confirmButtonText: 'نعم', cancelButtonText: 'إلغاء', reverseButtons: true })
-      .then((r) => { if (r.isConfirmed) this.cleanupForm(); });
+    Swal.fire({
+      title: 'تأكيد الإلغاء', icon: 'question',
+      showCancelButton: true, confirmButtonText: 'نعم', cancelButtonText: 'إلغاء', reverseButtons: true
+    }).then((r) => { if (r.isConfirmed) this.cleanupForm(); });
   }
 
   private cleanupForm() {
-    localStorage.removeItem('editingDraft'); localStorage.removeItem('lastPdfFilename');
-    this.pdfFilename = null; this.router.navigate(['/achievements']);
+    localStorage.removeItem('editingDraft');
+    localStorage.removeItem('lastPdfFilename');
+    this.pdfFilename = null;
+    this.router.navigate(['/achievements']);
   }
 
   resetForm() {
@@ -775,11 +776,23 @@ private createFormData(status: string, saveStatus: string): FormData {
   ngOnDestroy(): void { localStorage.removeItem('lastPdfFilename'); }
 
   // ==================== المرفقات ====================
+
   getFileName(url: string): string { return url ? url.split('/').pop() || 'ملف' : 'ملف'; }
-  getFileType(url: string): string { const ext = url?.split('.').pop()?.toLowerCase() || ''; return ['png', 'jpg', 'jpeg', 'webp', 'gif', 'bmp'].includes(ext) ? 'صورة' : 'ملف'; }
-  isImage(url: string): boolean { return ['png', 'jpg', 'jpeg', 'webp', 'gif', 'bmp'].includes(url?.split('.').pop()?.toLowerCase() || ''); }
-  isImageFile(file: File): boolean { return ['png', 'jpg', 'jpeg', 'webp', 'gif', 'bmp'].includes(file?.name.split('.').pop()?.toLowerCase() || ''); }
-  getFullAttachmentUrl(path: string): string { if (!path) return ''; if (path.startsWith('http')) return path; return `http://localhost:3000/${path.startsWith('/') ? '' : 'uploads/'}${path}`; }
+  getFileType(url: string): string {
+    const ext = url?.split('.').pop()?.toLowerCase() || '';
+    return ['png', 'jpg', 'jpeg', 'webp', 'gif', 'bmp'].includes(ext) ? 'صورة' : 'ملف';
+  }
+  isImage(url: string): boolean {
+    return ['png', 'jpg', 'jpeg', 'webp', 'gif', 'bmp'].includes(url?.split('.').pop()?.toLowerCase() || '');
+  }
+  isImageFile(file: File): boolean {
+    return ['png', 'jpg', 'jpeg', 'webp', 'gif', 'bmp'].includes(file?.name.split('.').pop()?.toLowerCase() || '');
+  }
+  getFullAttachmentUrl(path: string): string {
+    if (!path) return '';
+    if (path.startsWith('http')) return path;
+    return `http://localhost:3000${path.startsWith('/') ? '' : 'uploads/'}${path}`;
+  }
   getFilePreview(file: File): string { return this.isImageFile(file) ? URL.createObjectURL(file) : ''; }
   viewAttachment(url: string): void { window.open(this.getFullAttachmentUrl(url), '_blank'); }
 
@@ -788,29 +801,52 @@ private createFormData(status: string, saveStatus: string): FormData {
     if (!input.files) return;
     const files = Array.from(input.files);
     if (this.attachments.length + files.length + this.existingAttachments.length > this.maxFiles) {
-      this.showWarning(`الحد الأقصى ${this.maxFiles} ملفات فقط.`); return;
+      this.showWarning(`الحد الأقصى ${this.maxFiles} ملفات فقط.`);
+      return;
     }
     for (const f of files) {
       const ext = f.name.split('.').pop()?.toLowerCase() || '';
-      if (!['png', 'jpg', 'jpeg', 'webp', 'gif', 'bmp'].includes(ext)) { this.showError('نوع ملف غير مدعوم.'); continue; }
-      if (f.size / (1024 * 1024) > this.maxFileSizeMB) { this.showError(`حجم الملف أكبر من ${this.maxFileSizeMB}MB.`); continue; }
+      if (!['png', 'jpg', 'jpeg', 'webp', 'gif', 'bmp'].includes(ext)) {
+        this.showError('نوع ملف غير مدعوم.');
+        continue;
+      }
+      if (f.size / (1024 * 1024) > this.maxFileSizeMB) {
+        this.showError(`حجم الملف أكبر من ${this.maxFileSizeMB}MB.`);
+        continue;
+      }
       this.attachments.push(f);
     }
     input.value = '';
   }
 
   removeAttachment(index: number) { this.attachments.splice(index, 1); }
+
   removeExistingAttachment(index: number) {
-    Swal.fire({ title: 'تأكيد الحذف', icon: 'warning', showCancelButton: true, confirmButtonText: 'نعم', cancelButtonText: 'إلغاء', reverseButtons: true })
-      .then((r) => { if (r.isConfirmed) { this.deletedAttachments.push(this.existingAttachments[index]); this.existingAttachments.splice(index, 1); } });
+    Swal.fire({
+      title: 'تأكيد الحذف', icon: 'warning',
+      showCancelButton: true, confirmButtonText: 'نعم', cancelButtonText: 'إلغاء', reverseButtons: true
+    }).then((r) => {
+      if (r.isConfirmed) {
+        this.deletedAttachments.push(this.existingAttachments[index]);
+        this.existingAttachments.splice(index, 1);
+      }
+    });
   }
 
   // ==================== الرسائل ====================
-  private showSuccess(message: string): Promise<any> { return Swal.fire({ title: 'تم', text: message, icon: 'success' }); }
-  private showError(message: string): void { Swal.fire({ title: 'خطأ', text: message, icon: 'error' }); }
-  private showWarning(title: string, text?: string): void { Swal.fire({ title, text, icon: 'warning' }); }
+
+  private showSuccess(message: string): Promise<any> {
+    return Swal.fire({ title: 'تم', text: message, icon: 'success' });
+  }
+  private showError(message: string): void {
+    Swal.fire({ title: 'خطأ', text: message, icon: 'error' });
+  }
+  private showWarning(title: string, text?: string): void {
+    Swal.fire({ title, text, icon: 'warning' });
+  }
 
   // ==================== الخطوط ====================
+
   private injectQuillFontStyles(): void {
     const styleId = 'quill-custom-fonts';
     if (document.getElementById(styleId)) return;
@@ -846,223 +882,99 @@ private createFormData(status: string, saveStatus: string): FormData {
 
   showFontsPreview(): void {
     const fontNames: { [key: string]: string } = {
-      'cairo': 'Cairo (كايرو)',
-      'tajawal': 'Tajawal (تجوال)',
-      'amiri': 'Amiri (أميري)',
-      'noto-naskh': 'Noto Naskh Arabic',
-      'reem-kufi': 'Reem Kufi',
-      'lateef': 'Lateef (لطيف)',
-      'scheherazade': 'Scheherazade New',
-      'rakkas': 'Rakkas (رقاع)',
-      'mada': 'Mada (مادة)',
-      'ibm-plex-arabic': 'IBM Plex Arabic',
-      'harmattan': 'Harmattan (حرمتان)',
-      'markazi': 'Markazi Text (مركزي)',
-      'aref-ruqaa': 'Aref Ruqaa (عريض الرقاع)',
-      'el-messiri': 'El Messiri (المسيري)',
-      'jomhuria': 'Jomhuria (جمهورية)',
-      'mirza': 'Mirza (ميرزا)',
-      'katibeh': 'Katibeh (كاتبة)',
-      'lalezar': 'Lalezar (لالزار)',
-      'serif': 'Serif',
-      'monospace': 'Monospace',
-      'arial': 'Arial',
-      'times-new-roman': 'Times New Roman'
+      'cairo': 'Cairo (كايرو)', 'tajawal': 'Tajawal (تجوال)', 'amiri': 'Amiri (أميري)',
+      'noto-naskh': 'Noto Naskh Arabic', 'reem-kufi': 'Reem Kufi', 'lateef': 'Lateef (لطيف)',
+      'scheherazade': 'Scheherazade New', 'rakkas': 'Rakkas (رقاع)', 'mada': 'Mada (مادة)',
+      'ibm-plex-arabic': 'IBM Plex Arabic', 'harmattan': 'Harmattan (حرمتان)',
+      'markazi': 'Markazi Text (مركزي)', 'aref-ruqaa': 'Aref Ruqaa (عريض الرقاع)',
+      'el-messiri': 'El Messiri (المسيري)', 'jomhuria': 'Jomhuria (جمهورية)',
+      'mirza': 'Mirza (ميرزا)', 'katibeh': 'Katibeh (كاتبة)', 'lalezar': 'Lalezar (لالزار)',
+      'serif': 'Serif', 'monospace': 'Monospace', 'arial': 'Arial', 'times-new-roman': 'Times New Roman'
     };
 
     let htmlContent = '<div style="text-align: right; direction: rtl; max-height: 500px; overflow-y: auto;">';
     htmlContent += '<h5 style="color: #333; margin-bottom: 20px;">📝 معاينة الخطوط المتاحة</h5>';
-
     this.fontWhitelist.forEach(font => {
       if (font) {
         const fontName = fontNames[font] || font;
         const fontFamily = this.getFontFamily(font);
         htmlContent += `
-          <div style="
-            padding: 12px;
-            margin-bottom: 10px;
-            background: #f8f9fa;
-            border-radius: 4px;
-            border-left: 3px solid #007bff;
-          ">
-            <strong style="color: #333; font-size: 14px;">${fontName}</strong>
-            <div style="
-              font-family: ${fontFamily};
-              font-size: 18px;
-              color: #555;
-              margin-top: 8px;
-              padding: 10px;
-              background: white;
-              border-radius: 4px;
-            ">
+          <div style="padding:12px;margin-bottom:10px;background:#f8f9fa;border-radius:4px;border-left:3px solid #007bff;">
+            <strong style="color:#333;font-size:14px;">${fontName}</strong>
+            <div style="font-family:${fontFamily};font-size:18px;color:#555;margin-top:8px;padding:10px;background:white;border-radius:4px;">
               هذا نص عينة في خط ${fontName}
             </div>
-          </div>
-        `;
+          </div>`;
       }
     });
-
     htmlContent += '</div>';
-
-    Swal.fire({
-      title: '🎨 معاينة الخطوط',
-      html: htmlContent,
-      width: '600px',
-      confirmButtonText: 'حسناً'
-    });
+    Swal.fire({ title: '🎨 معاينة الخطوط', html: htmlContent, width: '600px', confirmButtonText: 'حسناً' });
   }
 
   showSizesPreview(): void {
     let htmlContent = '<div style="text-align: right; direction: rtl; max-height: 400px; overflow-y: auto;">';
     htmlContent += '<h5 style="color: #333; margin-bottom: 20px;">📏 معاينة أحجام الخطوط</h5>';
-
     this.sizeWhitelist.forEach(size => {
-      const sizeNum = parseInt(size);
       htmlContent += `
-        <div style="
-          padding: 12px;
-          margin-bottom: 10px;
-          background: #f8f9fa;
-          border-radius: 4px;
-          border-left: 3px solid #28a745;
-        ">
-          <strong style="color: #333;">${size}</strong>
-          <div style="
-            font-size: ${size};
-            color: #555;
-            margin-top: 8px;
-            padding: 8px;
-            background: white;
-            border-radius: 4px;
-            font-family: 'Cairo', sans-serif;
-          ">
-            نص عينة بحجم ${sizeNum}px
+        <div style="padding:12px;margin-bottom:10px;background:#f8f9fa;border-radius:4px;border-left:3px solid #28a745;">
+          <strong style="color:#333;">${size}</strong>
+          <div style="font-size:${size};color:#555;margin-top:8px;padding:8px;background:white;border-radius:4px;font-family:'Cairo',sans-serif;">
+            نص عينة بحجم ${parseInt(size)}px
           </div>
-        </div>
-      `;
+        </div>`;
     });
-
     htmlContent += '</div>';
-
-    Swal.fire({
-      title: '📏 معاينة أحجام الخطوط',
-      html: htmlContent,
-      width: '500px',
-      confirmButtonText: 'حسناً'
-    });
+    Swal.fire({ title: '📏 معاينة أحجام الخطوط', html: htmlContent, width: '500px', confirmButtonText: 'حسناً' });
   }
 
   showAllAvailableOptions(): void {
     const fontNames: { [key: string]: string } = {
-      'cairo': 'Cairo',
-      'tajawal': 'Tajawal',
-      'amiri': 'Amiri',
-      'noto-naskh': 'Noto Naskh Arabic',
-      'reem-kufi': 'Reem Kufi',
-      'lateef': 'Lateef',
-      'scheherazade': 'Scheherazade New',
-      'rakkas': 'Rakkas',
-      'mada': 'Mada',
-      'ibm-plex-arabic': 'IBM Plex Arabic',
-      'harmattan': 'Harmattan',
-      'markazi': 'Markazi Text',
-      'aref-ruqaa': 'Aref Ruqaa',
-      'el-messiri': 'El Messiri',
-      'jomhuria': 'Jomhuria',
-      'mirza': 'Mirza',
-      'katibeh': 'Katibeh',
-      'lalezar': 'Lalezar',
-      'serif': 'Serif',
-      'monospace': 'Monospace',
-      'arial': 'Arial',
-      'times-new-roman': 'Times New Roman'
+      'cairo': 'Cairo', 'tajawal': 'Tajawal', 'amiri': 'Amiri', 'noto-naskh': 'Noto Naskh Arabic',
+      'reem-kufi': 'Reem Kufi', 'lateef': 'Lateef', 'scheherazade': 'Scheherazade New',
+      'rakkas': 'Rakkas', 'mada': 'Mada', 'ibm-plex-arabic': 'IBM Plex Arabic',
+      'harmattan': 'Harmattan', 'markazi': 'Markazi Text', 'aref-ruqaa': 'Aref Ruqaa',
+      'el-messiri': 'El Messiri', 'jomhuria': 'Jomhuria', 'mirza': 'Mirza',
+      'katibeh': 'Katibeh', 'lalezar': 'Lalezar', 'serif': 'Serif',
+      'monospace': 'Monospace', 'arial': 'Arial', 'times-new-roman': 'Times New Roman'
     };
 
-    let htmlContent = '<div style="text-align: right; direction: rtl; max-height: 600px; overflow-y: auto;">';
-    htmlContent += `
-      <table style="width: 100%; border-collapse: collapse; font-size: 13px;">
-        <thead>
-          <tr style="background: #007bff; color: white;">
-            <th style="padding: 10px; border: 1px solid #ddd; text-align: right;">الخط</th>
-            <th style="padding: 10px; border: 1px solid #ddd; text-align: right;">الأحجام المتاحة</th>
-          </tr>
-        </thead>
-        <tbody>
-    `;
-
+    let htmlContent = '<div style="text-align:right;direction:rtl;max-height:600px;overflow-y:auto;">';
+    htmlContent += `<table style="width:100%;border-collapse:collapse;font-size:13px;">
+      <thead><tr style="background:#007bff;color:white;">
+        <th style="padding:10px;border:1px solid #ddd;text-align:right;">الخط</th>
+        <th style="padding:10px;border:1px solid #ddd;text-align:right;">الأحجام المتاحة</th>
+      </tr></thead><tbody>`;
     this.fontWhitelist.forEach((font, index) => {
       if (font) {
-        const fontName = fontNames[font] || font;
         const bgColor = index % 2 === 0 ? '#f9f9f9' : 'white';
-        htmlContent += `
-          <tr style="background: ${bgColor};">
-            <td style="padding: 10px; border: 1px solid #ddd; color: #333; font-weight: 500;">${fontName}</td>
-            <td style="padding: 10px; border: 1px solid #ddd;">
-              ${this.sizeWhitelist.join(', ')}
-            </td>
-          </tr>
-        `;
+        htmlContent += `<tr style="background:${bgColor};">
+          <td style="padding:10px;border:1px solid #ddd;color:#333;font-weight:500;">${fontNames[font] || font}</td>
+          <td style="padding:10px;border:1px solid #ddd;">${this.sizeWhitelist.join(', ')}</td>
+        </tr>`;
       }
     });
-
-    htmlContent += `
-        </tbody>
-      </table>
-    </div>
-    `;
-
-    Swal.fire({
-      title: '📋 جميع الخيارات المتاحة',
-      html: htmlContent,
-      width: '800px',
-      confirmButtonText: 'حسناً'
-    });
+    htmlContent += '</tbody></table></div>';
+    Swal.fire({ title: '📋 جميع الخيارات المتاحة', html: htmlContent, width: '800px', confirmButtonText: 'حسناً' });
   }
 
   exportFontsAndSizesAsText(): void {
-    let textContent = '===== قائمة الخطوط والأحجام المتاحة =====\n\n';
-
     const fontNames: { [key: string]: string } = {
-      'cairo': 'Cairo (كايرو)',
-      'tajawal': 'Tajawal (تجوال)',
-      'amiri': 'Amiri (أميري)',
-      'noto-naskh': 'Noto Naskh Arabic',
-      'reem-kufi': 'Reem Kufi',
-      'lateef': 'Lateef (لطيف)',
-      'scheherazade': 'Scheherazade New',
-      'rakkas': 'Rakkas (رقاع)',
-      'mada': 'Mada (مادة)',
-      'ibm-plex-arabic': 'IBM Plex Arabic',
-      'harmattan': 'Harmattan (حرمتان)',
-      'markazi': 'Markazi Text (مركزي)',
-      'aref-ruqaa': 'Aref Ruqaa (عريض الرقاع)',
-      'el-messiri': 'El Messiri (المسيري)',
-      'jomhuria': 'Jomhuria (جمهورية)',
-      'mirza': 'Mirza (ميرزا)',
-      'katibeh': 'Katibeh (كاتبة)',
-      'lalezar': 'Lalezar (لالزار)',
-      'serif': 'Serif',
-      'monospace': 'Monospace',
-      'arial': 'Arial',
-      'times-new-roman': 'Times New Roman'
+      'cairo': 'Cairo (كايرو)', 'tajawal': 'Tajawal (تجوال)', 'amiri': 'Amiri (أميري)',
+      'noto-naskh': 'Noto Naskh Arabic', 'reem-kufi': 'Reem Kufi', 'lateef': 'Lateef (لطيف)',
+      'scheherazade': 'Scheherazade New', 'rakkas': 'Rakkas (رقاع)', 'mada': 'Mada (مادة)',
+      'ibm-plex-arabic': 'IBM Plex Arabic', 'harmattan': 'Harmattan (حرمتان)',
+      'markazi': 'Markazi Text (مركزي)', 'aref-ruqaa': 'Aref Ruqaa (عريض الرقاع)',
+      'el-messiri': 'El Messiri (المسيري)', 'jomhuria': 'Jomhuria (جمهورية)',
+      'mirza': 'Mirza (ميرزا)', 'katibeh': 'Katibeh (كاتبة)', 'lalezar': 'Lalezar (لالزار)',
+      'serif': 'Serif', 'monospace': 'Monospace', 'arial': 'Arial', 'times-new-roman': 'Times New Roman'
     };
-
-    textContent += '📝 الخطوط المتاحة:\n';
-    textContent += '-'.repeat(50) + '\n';
+    let textContent = '===== قائمة الخطوط والأحجام المتاحة =====\n\n📝 الخطوط المتاحة:\n' + '-'.repeat(50) + '\n';
     this.fontWhitelist.forEach((font, index) => {
-      if (font) {
-        textContent += `${index + 1}. ${fontNames[font] || font}\n`;
-      }
+      if (font) textContent += `${index + 1}. ${fontNames[font] || font}\n`;
     });
-
-    textContent += '\n📏 أحجام الخطوط المتاحة:\n';
-    textContent += '-'.repeat(50) + '\n';
-    this.sizeWhitelist.forEach((size, index) => {
-      textContent += `${index + 1}. ${size}\n`;
-    });
-
-    textContent += '\n' + '='.repeat(50) + '\n';
-    textContent += `تم إنشاء القائمة في: ${new Date().toLocaleString('ar-EG')}\n`;
+    textContent += '\n📏 أحجام الخطوط المتاحة:\n' + '-'.repeat(50) + '\n';
+    this.sizeWhitelist.forEach((size, index) => { textContent += `${index + 1}. ${size}\n`; });
+    textContent += '\n' + '='.repeat(50) + `\nتم إنشاء القائمة في: ${new Date().toLocaleString('ar-EG')}\n`;
 
     const element = document.createElement('a');
     element.setAttribute('href', 'data:text/plain;charset=utf-8,' + encodeURIComponent(textContent));
@@ -1071,33 +983,20 @@ private createFormData(status: string, saveStatus: string): FormData {
     document.body.appendChild(element);
     element.click();
     document.body.removeChild(element);
-
     this.showSuccess('تم تصدير القائمة بنجاح');
   }
 
   private getFontFamily(fontName: string): string {
     const fontMap: { [key: string]: string } = {
-      'cairo': "'Cairo', sans-serif",
-      'tajawal': "'Tajawal', sans-serif",
-      'amiri': "'Amiri', serif",
-      'noto-naskh': "'Noto Naskh Arabic', serif",
-      'reem-kufi': "'Reem Kufi', sans-serif",
-      'lateef': "'Lateef', serif",
-      'scheherazade': "'Scheherazade New', serif",
-      'rakkas': "'Rakkas', cursive",
-      'mada': "'Mada', sans-serif",
-      'ibm-plex-arabic': "'IBM Plex Arabic', sans-serif",
-      'harmattan': "'Harmattan', sans-serif",
-      'markazi': "'Markazi Text', serif",
-      'aref-ruqaa': "'Aref Ruqaa', serif",
-      'el-messiri': "'El Messiri', sans-serif",
-      'jomhuria': "'Jomhuria', serif",
-      'mirza': "'Mirza', cursive",
-      'katibeh': "'Katibeh', serif",
-      'lalezar': "'Lalezar', cursive",
-      'serif': 'serif',
-      'monospace': 'monospace',
-      'arial': 'Arial, sans-serif',
+      'cairo': "'Cairo', sans-serif", 'tajawal': "'Tajawal', sans-serif", 'amiri': "'Amiri', serif",
+      'noto-naskh': "'Noto Naskh Arabic', serif", 'reem-kufi': "'Reem Kufi', sans-serif",
+      'lateef': "'Lateef', serif", 'scheherazade': "'Scheherazade New', serif",
+      'rakkas': "'Rakkas', cursive", 'mada': "'Mada', sans-serif",
+      'ibm-plex-arabic': "'IBM Plex Arabic', sans-serif", 'harmattan': "'Harmattan', sans-serif",
+      'markazi': "'Markazi Text', serif", 'aref-ruqaa': "'Aref Ruqaa', serif",
+      'el-messiri': "'El Messiri', sans-serif", 'jomhuria': "'Jomhuria', serif",
+      'mirza': "'Mirza', cursive", 'katibeh': "'Katibeh', serif", 'lalezar': "'Lalezar', cursive",
+      'serif': 'serif', 'monospace': 'monospace', 'arial': 'Arial, sans-serif',
       'times-new-roman': "'Times New Roman', serif"
     };
     return fontMap[fontName] || fontName;
